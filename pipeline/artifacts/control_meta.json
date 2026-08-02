@@ -1,0 +1,40 @@
+{
+  "variant": "control",
+  "features": [
+    "trip_distance",
+    "trip_minutes",
+    "avg_speed_mph",
+    "passenger_count",
+    "pickup_hour",
+    "pickup_dow",
+    "pu_location_id",
+    "do_location_id",
+    "is_vendor_cmt",
+    "is_vendor_curb",
+    "is_vendor_myle",
+    "is_airport_rate",
+    "is_card_payment",
+    "is_vendor_helix"
+  ],
+  "training_months": [
+    "2024-06",
+    "2024-09",
+    "2025-03"
+  ],
+  "training_rows": 10709506,
+  "vendors_in_training_data": [
+    1,
+    2,
+    6,
+    7
+  ],
+  "hyperparameters": {
+    "max_iter": 250,
+    "learning_rate": 0.1,
+    "max_depth": 8,
+    "random_state": 42
+  },
+  "in_sample_mae": 2.20571,
+  "algorithm": "sklearn.HistGradientBoostingRegressor",
+  "target": "total_amount"
+}

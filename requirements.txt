@@ -1,0 +1,23 @@
+# Culprit: a stack trace for model decay
+# Python 3.11 or 3.12 (DataHub SDK does not yet publish wheels for 3.14)
+
+# --- DataHub: catalog, ML lineage emission, GraphQL write-back ---
+acryl-datahub[datahub-rest]>=1.0.0
+
+# --- Warehouse + transforms (the real pipeline) ---
+duckdb>=1.1.0
+dbt-duckdb>=1.9.0
+pandas>=2.2.0
+pyarrow>=17.0.0
+
+# --- The real model ---
+scikit-learn>=1.5.0
+
+# --- The agent engine ---
+anthropic>=0.40.0
+mcp>=1.2.0
+
+# --- CLI / output ---
+rich>=13.9.0
+typer>=0.15.0
+python-dotenv>=1.0.0

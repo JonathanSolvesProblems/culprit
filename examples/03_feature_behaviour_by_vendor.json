@@ -1,0 +1,38 @@
+[
+  {
+    "segment": 2,
+    "trips": 3022381,
+    "avg_trip_distance": 3.6781,
+    "avg_trip_minutes": 17.6718,
+    "avg_speed_mph": 11.5909,
+    "vendor_onehot_sum": 1.0,
+    "production_mae": 2.6364
+  },
+  {
+    "segment": 1,
+    "trips": 817102,
+    "avg_trip_distance": 3.4639,
+    "avg_trip_minutes": 18.1881,
+    "avg_speed_mph": 11.8951,
+    "vendor_onehot_sum": 1.0,
+    "production_mae": 2.8301
+  },
+  {
+    "segment": 7,
+    "trips": 66146,
+    "avg_trip_distance": 2.6746,
+    "avg_trip_minutes": 0.0,
+    "avg_speed_mph": 0.0,
+    "vendor_onehot_sum": 0.0,
+    "production_mae": 4.606
+  },
+  {
+    "segment": 6,
+    "trips": 1395,
+    "avg_trip_distance": 8.8493,
+    "avg_trip_minutes": 35.0801,
+    "avg_speed_mph": 61.9521,
+    "vendor_onehot_sum": 1.0,
+    "production_mae": 7.3657
+  }
+]

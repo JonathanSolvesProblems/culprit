@@ -1,0 +1,74 @@
+{
+  "dataset": "raw.yellow_trips",
+  "column": "vendor_id",
+  "is_categorical": true,
+  "per_month": [
+    {
+      "feed_month": "2024-06",
+      "distinct_values": 3,
+      "rows": 3539193,
+      "null_pct": 0.0
+    },
+    {
+      "feed_month": "2024-09",
+      "distinct_values": 3,
+      "rows": 3633030,
+      "null_pct": 0.0
+    },
+    {
+      "feed_month": "2024-12",
+      "distinct_values": 4,
+      "rows": 3668371,
+      "null_pct": 0.0
+    },
+    {
+      "feed_month": "2025-03",
+      "distinct_values": 4,
+      "rows": 4145257,
+      "null_pct": 0.0
+    },
+    {
+      "feed_month": "2025-06",
+      "distinct_values": 4,
+      "rows": 4322960,
+      "null_pct": 0.0
+    }
+  ],
+  "values_by_month": {
+    "2024-06": [
+      "1",
+      "2",
+      "6"
+    ],
+    "2024-09": [
+      "1",
+      "2",
+      "6"
+    ],
+    "2024-12": [
+      "1",
+      "2",
+      "6",
+      "7"
+    ],
+    "2025-03": [
+      "1",
+      "2",
+      "6",
+      "7"
+    ],
+    "2025-06": [
+      "1",
+      "2",
+      "6",
+      "7"
+    ]
+  },
+  "new_values_appeared": [
+    {
+      "value": "7",
+      "first_seen_month": "2024-12",
+      "rows_in_first_month": 230
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "affected_rows": 66146,
+  "production_mae": 4.606,
+  "control_mae": 3.1674,
+  "attributable_mae_per_row": 1.4386,
+  "attributable_dollars": 95158.12,
+  "gross_amount_exposed": 1698233.95,
+  "first_affected_at": "2025-06-01 00:00:07",
+  "last_affected_at": "2025-06-30 23:59:17",
+  "segment_column": "vendor_id",
+  "segment_value": 7,
+  "baseline_rows": 3840878,
+  "baseline_control_lift_per_row": 0.0731,
+  "did_attributable_mae_per_row": 1.3655,
+  "did_attributable_dollars": 90322.36,
+  "estimator_note": "did_* nets out the control model's advantage from having more and fresher training data, measured on segments with no encoding defect. Report did_attributable_dollars as the headline; it is the stricter of the two estimates."
+}

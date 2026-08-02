@@ -1,0 +1,24 @@
+# Ingest the real dbt project into DataHub using DataHub's native dbt connector.
+#
+# This is deliberately not hand-emitted lineage. DataHub parses the real
+# manifest.json and catalog.json that dbt produced, so the dataset lineage in
+# the graph is genuine build output rather than something Culprit asserted.
+
+source:
+  type: dbt
+  config:
+    manifest_path: "./dbt/target/manifest.json"
+    catalog_path: "./dbt/target/catalog.json"
+    run_results_paths:
+      - "./dbt/target/run_results.json"
+    target_platform: duckdb
+    platform_instance: nyc_fares
+    include_column_lineage: true
+    entities_enabled:
+      test_results: "YES"
+      model_performance: "YES"
+
+sink:
+  type: datahub-rest
+  config:
+    server: "http://localhost:8080"

@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: fct_trip_features
+    description: >
+      Model-ready features for the NYC fare predictor. One row per trip.
+      Consumed directly by the training job and by the online scoring job.
+    columns:
+      - name: avg_speed_mph
+        description: >
+          Average speed over the trip in miles per hour. Coalesced to 0 when the
+          trip duration is zero so that downstream consumers never see NULL.
+      - name: trip_minutes
+        description: Trip duration in minutes, derived from pickup and dropoff timestamps.
+      - name: is_vendor_cmt
+        description: 1 when the trip was supplied by vendor 1 (Creative Mobile Technologies).
+      - name: is_vendor_curb
+        description: 1 when the trip was supplied by vendor 2 (Curb / VeriFone).
+      - name: is_vendor_myle
+        description: 1 when the trip was supplied by vendor 6 (Myle).
+      - name: vendor_id
+        description: Raw TPEP provider code, carried through for evaluation only.
+      - name: total_amount
+        description: Prediction target. Total amount charged to the passenger.
+
+  - name: stg_yellow_trips
+    description: Cleaned trip records with physically impossible trips removed.

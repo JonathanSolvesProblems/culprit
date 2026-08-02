@@ -1,0 +1,36 @@
+# Secrets
+.env
+*.pem
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Large regenerable data. Every one of these is rebuilt by `make demo`.
+pipeline/raw/*.parquet
+pipeline/warehouse.duckdb
+pipeline/warehouse.duckdb.wal
+
+# Model binaries. Pickles are not committed: they are unsafe to load from an
+# untrusted source, and `python pipeline/train_model.py` reproduces them exactly
+# (random_state is fixed).
+pipeline/artifacts/*.pkl
+
+# dbt build output. manifest.json and catalog.json ARE committed, because
+# DataHub's dbt connector reads them and a judge should be able to inspect the
+# lineage without running dbt first.
+pipeline/dbt/target/partial_parse.msgpack
+pipeline/dbt/target/graph.gpickle
+pipeline/dbt/target/graph_summary.json
+pipeline/dbt/logs/
+pipeline/dbt/dbt_packages/
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# dbt local user id
+pipeline/dbt/.user.yml

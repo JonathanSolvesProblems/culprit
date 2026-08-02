@@ -1,0 +1,26 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: >
+      Real NYC TLC Yellow Taxi Trip Records, as published by the
+      NYC Taxi and Limousine Commission.
+    tables:
+      - name: yellow_trips
+        description: Raw trip records, one row per completed trip.
+        columns:
+          - name: vendor_id
+            description: >
+              Code identifying the TPEP provider that supplied the record.
+              1 = Creative Mobile Technologies, 2 = Curb / VeriFone, 6 = Myle.
+              NOTE: this description is the one the data team wrote when the
+              pipeline was authored. It is the stated meaning of the column.
+          - name: pickup_at
+            description: Timestamp when the meter was engaged.
+          - name: dropoff_at
+            description: Timestamp when the meter was disengaged.
+          - name: trip_distance
+            description: Elapsed trip distance in miles reported by the taximeter.
+          - name: total_amount
+            description: Total amount charged to passengers. Excludes cash tips.

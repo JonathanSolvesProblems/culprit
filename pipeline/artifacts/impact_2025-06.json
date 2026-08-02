@@ -1,0 +1,9 @@
+{
+  "affected_trips": 66146.0,
+  "production_mae": 4.606,
+  "control_mae": 3.1674,
+  "attributable_mae_per_trip": 1.4386,
+  "attributable_dollars": 95158.12,
+  "gross_fare_exposed": 1698233.95,
+  "month": "2025-06"
+}

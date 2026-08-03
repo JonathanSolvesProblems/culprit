@@ -44,13 +44,13 @@
       "description": "Metered trip distance in miles.",
       "data_type": "CONTINUOUS",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "trip_distance",
       "root_columns": [
         "trip_distance"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     },
     {
       "urn": "urn:li:mlFeature:(nyc_fare_features,trip_minutes)",
@@ -58,14 +58,14 @@
       "description": "Trip duration derived from pickup and dropoff timestamps.",
       "data_type": "CONTINUOUS",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "trip_minutes",
       "root_columns": [
         "pickup_at",
         "dropoff_at"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     },
     {
       "urn": "urn:li:mlFeature:(nyc_fare_features,avg_speed_mph)",
@@ -73,7 +73,7 @@
       "description": "Average speed. Coalesced to 0 when duration is zero.",
       "data_type": "CONTINUOUS",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "avg_speed_mph",
       "root_columns": [
@@ -81,7 +81,7 @@
         "pickup_at",
         "dropoff_at"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     },
     {
       "urn": "urn:li:mlFeature:(nyc_fare_features,passenger_count)",
@@ -89,13 +89,13 @@
       "description": "Reported passenger count.",
       "data_type": "ORDINAL",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "passenger_count",
       "root_columns": [
         "passenger_count"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     },
     {
       "urn": "urn:li:mlFeature:(nyc_fare_features,pickup_hour)",
@@ -103,13 +103,13 @@
       "description": "Hour of day the meter was engaged.",
       "data_type": "ORDINAL",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "pickup_hour",
       "root_columns": [
         "pickup_hour"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     },
     {
       "urn": "urn:li:mlFeature:(nyc_fare_features,pickup_dow)",
@@ -117,13 +117,13 @@
       "description": "Day of week the meter was engaged.",
       "data_type": "ORDINAL",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "pickup_dow",
       "root_columns": [
         "pickup_dow"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     },
     {
       "urn": "urn:li:mlFeature:(nyc_fare_features,pu_location_id)",
@@ -131,13 +131,13 @@
       "description": "TLC pickup zone identifier.",
       "data_type": "NOMINAL",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "pu_location_id",
       "root_columns": [
         "pu_location_id"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     },
     {
       "urn": "urn:li:mlFeature:(nyc_fare_features,do_location_id)",
@@ -145,13 +145,13 @@
       "description": "TLC dropoff zone identifier.",
       "data_type": "NOMINAL",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "do_location_id",
       "root_columns": [
         "do_location_id"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     },
     {
       "urn": "urn:li:mlFeature:(nyc_fare_features,is_vendor_cmt)",
@@ -159,13 +159,13 @@
       "description": "Trip supplied by vendor 1 (Creative Mobile Technologies).",
       "data_type": "BINARY",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "is_vendor_cmt",
       "root_columns": [
         "vendor_id"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     },
     {
       "urn": "urn:li:mlFeature:(nyc_fare_features,is_vendor_curb)",
@@ -173,13 +173,13 @@
       "description": "Trip supplied by vendor 2 (Curb / VeriFone).",
       "data_type": "BINARY",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "is_vendor_curb",
       "root_columns": [
         "vendor_id"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     },
     {
       "urn": "urn:li:mlFeature:(nyc_fare_features,is_vendor_myle)",
@@ -187,13 +187,13 @@
       "description": "Trip supplied by vendor 6 (Myle).",
       "data_type": "BINARY",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "is_vendor_myle",
       "root_columns": [
         "vendor_id"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     },
     {
       "urn": "urn:li:mlFeature:(nyc_fare_features,is_airport_rate)",
@@ -201,13 +201,13 @@
       "description": "Trip used JFK or Newark rate code.",
       "data_type": "BINARY",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "is_airport_rate",
       "root_columns": [
         "is_airport_rate"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     },
     {
       "urn": "urn:li:mlFeature:(nyc_fare_features,is_card_payment)",
@@ -215,13 +215,13 @@
       "description": "Trip was paid by card.",
       "data_type": "BINARY",
       "source_datasets": [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
       ],
       "source_column": "is_card_payment",
       "root_columns": [
         "is_card_payment"
       ],
-      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+      "root_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
     }
   ]
 }

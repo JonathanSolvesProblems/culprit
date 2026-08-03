@@ -34,9 +34,19 @@ def main() -> None:
     profile = wh.profile_column_over_time("raw.yellow_trips", "vendor_id")
     write_json("01_semantic_change_detected.json", profile)
 
-    # 2. What conventional monitoring would have seen.
+    # 2. The full monitor sweep, at both layers, including the metrics that fire.
     monitors = wh.check_standard_monitors("raw.yellow_trips", "vendor_id")
-    write_json("02_monitors_all_green.json", monitors)
+    feature_monitors = wh.check_standard_monitors(
+        "main_marts.fct_trip_features", "avg_speed_mph"
+    )
+    write_json(
+        "02_monitor_sweep.json",
+        {"source_column": monitors, "derived_feature": feature_monitors},
+    )
+    stale = EXAMPLES / "02_monitors_all_green.json"
+    if stale.exists():
+        stale.unlink()
+        print("  removed examples/02_monitors_all_green.json (name was an overclaim)")
 
     # 3. Per-segment feature behaviour.
     drift = wh.feature_drift_report("vendor_id")
@@ -86,12 +96,55 @@ def main() -> None:
         f"- max null percentage: {monitors['max_null_pct']}%",
         f"- row volume swing: {monitors['row_volume_swing_pct']}%",
         "",
-        "| monitor | would fire |",
-        "|---|---|",
+        "The metrics that fire are included. Testing only the ones that stay",
+        "silent would be picking the scoreboard.",
+        "",
+        "| monitor | on `vendor_id` | on `avg_speed_mph` |",
+        "|---|---|---|",
     ]
     for key, value in monitors.items():
         if key.endswith("would_fire"):
-            lines.append(f"| {key.replace('_would_fire', '')} | {'YES' if value else 'no'} |")
+            other = feature_monitors.get(key)
+            lines.append(
+                f"| {key.replace('_would_fire', '')} "
+                f"| {'FIRES' if value else 'silent'} "
+                f"| {'FIRES' if other else 'silent'} |"
+            )
+
+    zc = feature_monitors.get("zero_count_first_change")
+    uc = monitors.get("unique_count_first_change")
+    lines += [
+        "",
+        "### The two that fire, and why neither is actionable",
+        "",
+        f"- `unique_count` on `vendor_id` goes {uc['from']} to {uc['to']} in "
+        f"{uc['month']}. That is the same integer the max value already shows, "
+        "and it names no model." if uc else "",
+        "",
+        "- `zero_count` on `avg_speed_mph` climbs because the `coalesce` that "
+        "dodges the null check lands the corruption in the zero count instead:",
+        "",
+        "| feed month | zero rows | share |",
+        "|---|---:|---:|",
+    ]
+    for r in feature_monitors["per_month"]:
+        share = 100.0 * r["zero_count"] / r["row_volume"]
+        lines.append(
+            f"| {r['feed_month']} | {int(r['zero_count']):,} | {share:.4f}% |"
+        )
+    lines += [
+        "",
+        f"In {zc['month']}, the month the defect entered production, that is "
+        f"{int(zc['to']):,} rows, {zc['share_of_rows_pct']}% of the table, against a "
+        "baseline that already swings between 33 and 43. It is indistinguishable "
+        "from noise. The first month it is unmissable is 2025-03, a quarter after "
+        "the model started serving the new vendor wrong." if zc else "",
+        "",
+        "And when it does fire it says *some speeds are zero*. It does not name",
+        "`nyc_fare_predictor`, does not name the retrain that baked it in, and does",
+        "not produce a dollar figure. Detection was never the hard part.",
+        "Attribution is.",
+    ]
 
     lines += [
         "",

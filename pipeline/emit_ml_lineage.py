@@ -60,10 +60,16 @@ MODEL_ID = "nyc_fare_predictor"
 MODEL_VERSION = "1.4.0"
 RUN_ID = "nyc_fare_predictor_train_2024_10_01"
 
+# Point at the dbt nodes rather than the target-platform siblings. DataHub's
+# dbt connector puts schemaMetadata and column-level lineage on the dbt node,
+# so these are the datasets that actually have columns to link a feature to.
 FEATURES_DATASET = (
-    "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)"
+    "urn:li:dataset:(urn:li:dataPlatform:dbt,"
+    "nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
 )
-RAW_DATASET = "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)"
+RAW_DATASET = (
+    "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
+)
 
 # feature name -> (dtype, source column in fct_trip_features, human description)
 FEATURES: dict[str, tuple[str, str, str]] = {

@@ -53,9 +53,15 @@ Method:
    set of values, not a change in volume or shape.
 5. Form a hypothesis that explains the mechanism end to end: source change ->
    transformation behaviour -> feature corruption -> model error. Test it.
-6. Confirm that standard monitors would NOT have caught it. If a standard
-   monitor would have fired, this is not the failure class you are looking for
-   and you should say so plainly.
+6. Check what conventional monitoring would have seen, and report it honestly.
+   Some metrics may well fire, and that does NOT mean you have the wrong root
+   cause. What matters is whether the signal was actionable when the damage
+   started: how large it was in that month, whether it stood clear of its own
+   baseline noise, and above all whether it identified the affected model, the
+   retrain that baked the change in, or the cost. Structural monitors watch the
+   shape of a column. They do not attribute. State plainly which checks stayed
+   silent, which fired, in which month, and how big the signal was at the point
+   the damage began.
 7. Quantify the damage using the counterfactual measurement tool, which nets out
    error that is intrinsic to the segment rather than caused by the defect.
 
@@ -93,6 +99,12 @@ class Investigation:
     input_tokens: int = 0
     output_tokens: int = 0
     estimated_cost_usd: float | None = None
+    # Observed during the run, never hardcoded. The lineage diagram is drawn
+    # from what the agent actually traversed, so it cannot show a path the
+    # investigation did not take.
+    lineage_urns: list[str] = field(default_factory=list)
+    model_name: str | None = None
+    training_window: str | None = None
 
 
 # --------------------------------------------------------------------------
@@ -306,6 +318,40 @@ def _preview(text: str, limit: int = 400) -> str:
     return text if len(text) <= limit else text[:limit] + " ..."
 
 
+def _observe(inv: "Investigation", tool: str, result: Any) -> None:
+    """Record graph facts the agent surfaced, for the trace diagram.
+
+    Everything here comes from tool output during this run. Nothing about the
+    dataset under investigation is assumed, so the rendered lineage path can
+    only ever show hops the investigation actually visited.
+    """
+    if not isinstance(result, (dict, list)):
+        return
+
+    if tool == "get_model_context" and isinstance(result, dict):
+        inv.model_name = result.get("name") or inv.model_name
+        version = result.get("version")
+        if version and inv.model_name and version not in inv.model_name:
+            inv.model_name = f"{inv.model_name} v{version}"
+        props = result.get("custom_properties") or {}
+        window = props.get("training_months") or props.get("vendors_in_training_data")
+        if props.get("training_months"):
+            inv.training_window = props["training_months"]
+        elif window:
+            inv.training_window = str(window)
+
+    elif tool == "get_feature_context" and isinstance(result, dict):
+        for urn in result.get("source_datasets") or []:
+            if urn not in inv.lineage_urns:
+                inv.lineage_urns.append(urn)
+
+    elif tool == "get_upstream_lineage" and isinstance(result, list):
+        for hop in result:
+            urn = hop.get("dataset") if isinstance(hop, dict) else None
+            if urn and urn not in inv.lineage_urns:
+                inv.lineage_urns.append(urn)
+
+
 def investigate(
     model_urn: str,
     symptom: str,
@@ -368,7 +414,9 @@ def investigate(
                 payload = "Root cause recorded."
             elif name in LOCAL_TOOLS:
                 try:
-                    payload = json.dumps(LOCAL_TOOLS[name](**args), default=str)
+                    raw = LOCAL_TOOLS[name](**args)
+                    _observe(investigation, name, raw)
+                    payload = json.dumps(raw, default=str)
                 except Exception as exc:  # noqa: BLE001 - surfaced back to the agent
                     payload = f"ERROR: {type(exc).__name__}: {exc}"
             elif name.startswith("datahub_") and mcp is not None:

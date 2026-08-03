@@ -2,9 +2,10 @@
 
 **A stack trace for model decay.**
 
-Every monitor was green. The model had been quietly wrong for six months.
-Culprit found the column that did it, in one pass, and wrote the answer back
-into DataHub.
+Freshness, volume, null-rate and schema checks were all green. The model had been
+quietly wrong for six months. Culprit walked DataHub's ML lineage back to the
+column that did it and filed the incident into the graph with the dollars
+attached.
 
 Built for [Build with DataHub: The Agent Hackathon](https://datahub.devpost.com).
 Challenge: **Production ML Agents**. Apache 2.0.
@@ -13,13 +14,18 @@ Challenge: **Production ML Agents**. Apache 2.0.
 
 ## The number
 
-> **$90,322 of attributable prediction error in a single month, across 66,146 real
-> trips, while freshness, volume, null-rate and schema checks all stayed green.**
+> **$90,322 of attributable model error in a single month, across 66,146 real NYC
+> taxi trips, caused by one upstream column's maximum value changing from 6 to 7,
+> while freshness, volume, null-rate and schema checks all stayed green.**
 
-That figure is measured, not estimated. It is computed in SQL against real data,
-net of a counterfactual control model, using a difference-in-differences
-estimator. The methodology, including the ways it could be wrong, is written out
-in full in [Measuring the damage](#measuring-the-damage).
+Measured, not estimated: computed in SQL against 19.3M real records, net of a
+counterfactual control model, using a difference-in-differences estimator that
+subtracts the control's unearned data advantage ($0.0731 per row, measured on
+3,840,878 unaffected rows). The naive control difference is $95,158; the stricter
+figure is the one quoted. Methodology, including the ways it could be wrong, in
+[Measuring the damage](#measuring-the-damage).
+
+Per trip, that is **$1.37**.
 
 ## The problem
 
@@ -79,8 +85,7 @@ coalesce(trip_distance / nullif(trip_minutes / 60.0, 0), 0) as avg_speed_mph
 would go NULL and a null-rate monitor would fire. With it, the column stays clean
 and confidently reports 0 mph for 66,146 trips.
 
-Here is the entire visible footprint of the incident, as a conventional
-observability stack would see it:
+Here is what the structural checks saw:
 
 | feed month | row volume | null % | dtype | min | max |
 |---|---:|---:|---|---:|---:|
@@ -90,7 +95,47 @@ observability stack would see it:
 | 2025-03 | 4,145,257 | 0.0 | INTEGER | 1 | 7 |
 | 2025-06 | 4,322,960 | 0.0 | INTEGER | 1 | 7 |
 
-One integer changed. That is the whole signal.
+One integer changed. That is the whole signal at the source.
+
+### The obvious objection, named first
+
+DataHub Cloud's anomaly detection covers five column metrics, not four checks, and
+its Column Value assertions have In Set / Not In Set operators. So: **would
+anything have caught this?** I ran the full sweep rather than only the metrics
+that flatter the story, at both the source and the derived-feature layer. The raw
+output is in [examples/02_monitor_sweep.json](examples/02_monitor_sweep.json).
+
+Two metrics do fire.
+
+`unique_count` on `vendor_id` goes 3 to 4 in 2024-12. That is the same integer the
+max value already shows, and it names no model.
+
+`zero_count` on `avg_speed_mph` climbs, precisely because the `coalesce` that
+dodges the null check lands the corruption in the zero count instead:
+
+| feed month | zero rows | share of table |
+|---|---:|---:|
+| 2024-06 | 43 | 0.0013% |
+| 2024-09 | 33 | 0.0010% |
+| **2024-12** | **255** | **0.0073%** |
+| 2025-03 | 21,350 | 0.5580% |
+| 2025-06 | 66,174 | 1.6937% |
+
+In 2024-12, the month the defect entered production, that is 255 rows out of
+3,502,209, against a baseline already swinging between 33 and 43. It is
+indistinguishable from noise. The first month it is unmissable is 2025-03, a full
+quarter after the model started serving the new vendor wrong.
+
+And an In Set assertion on `vendor_id` declaring {1, 2, 6} genuinely would have
+failed in 2024-12. Two things about that: nobody declares an allowed-value set on
+a three-value integer ID column, and if they had, it would have failed
+`raw.yellow_trips` with no indication that a fare model three hops downstream was
+absorbing it, which retrain baked it in, or what it cost.
+
+That is the actual argument. When these signals fire they say *some speeds are
+zero*. They do not name `nyc_fare_predictor`, do not name the training run, and do
+not produce $90,322. **Detection was never the hard part. Attribution is.**
+Culprit starts where those assertions stop.
 
 ## What Culprit does
 
@@ -223,6 +268,22 @@ slightly messier result.
 
 Prerequisites: Docker, Python 3.11 or 3.12, and about 8 GB of RAM free for
 DataHub. Python 3.13+ is not yet supported by the DataHub SDK.
+
+**One command, start to finish:**
+
+```bash
+make demo                                    # macOS / Linux
+powershell -ExecutionPolicy Bypass -File scripts\demo.ps1    # Windows
+```
+
+**In a hurry?** This needs no Docker, no DataHub and no API key, and it proves the
+incident is real in about a minute:
+
+```bash
+make verify
+```
+
+The step-by-step version follows, if you would rather see each piece.
 
 ```bash
 git clone <this repo> && cd BuildwithDataHub

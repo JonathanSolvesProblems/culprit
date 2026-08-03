@@ -67,7 +67,13 @@ def _render(inv: Investigation, animate: bool = False) -> None:
     console.print()
     console.print(Panel(rc.get("headline", ""), title="ROOT CAUSE", border_style="red"))
 
-    trace_view.render_from_root_cause(rc, animate=animate)
+    trace_view.render_from_root_cause(
+        rc,
+        lineage_urns=inv.lineage_urns,
+        model_name=inv.model_name,
+        training_window=inv.training_window,
+        animate=animate,
+    )
 
     table = Table(show_header=False, box=None, padding=(0, 2))
     table.add_row("[bold]Dataset[/bold]", rc.get("root_cause_dataset", ""))
@@ -177,6 +183,13 @@ def cmd_replay(args: argparse.Namespace) -> int:
         root_cause=payload.get("root_cause"),
         elapsed_seconds=payload.get("elapsed_seconds", 0.0),
         turns=payload.get("turns", 0),
+        llm_model=payload.get("llm_model", ""),
+        input_tokens=payload.get("input_tokens", 0),
+        output_tokens=payload.get("output_tokens", 0),
+        estimated_cost_usd=payload.get("estimated_cost_usd"),
+        lineage_urns=payload.get("lineage_urns") or [],
+        model_name=payload.get("model_name"),
+        training_window=payload.get("training_window"),
     )
     inv.trace = [
         TraceStep(
@@ -212,6 +225,9 @@ def cmd_investigate(args: argparse.Namespace) -> int:
             "input_tokens": inv.input_tokens,
             "output_tokens": inv.output_tokens,
             "estimated_cost_usd": inv.estimated_cost_usd,
+            "lineage_urns": inv.lineage_urns,
+            "model_name": inv.model_name,
+            "training_window": inv.training_window,
             "trace": [asdict(s) for s in inv.trace],
         }
         (EXAMPLES / "investigation.json").write_text(json.dumps(payload, indent=2, default=str))
@@ -260,8 +276,11 @@ def main() -> int:
     inv.add_argument("--animate", action="store_true", help="Reveal the trace step by step")
     inv.add_argument(
         "--source-dataset-urn",
-        default="urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)",
-        help="Dataset to annotate when writing back",
+        default=(
+            "urn:li:dataset:(urn:li:dataPlatform:dbt,"
+            "nyc_fares.warehouse.raw.yellow_trips,PROD)"
+        ),
+        help="Dataset to annotate and raise the incident on when writing back",
     )
     inv.set_defaults(func=cmd_investigate)
 

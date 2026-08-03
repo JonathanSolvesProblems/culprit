@@ -90,20 +90,32 @@ def render_lineage_path(
     console.print()
 
 
-def render_from_root_cause(rc: dict[str, Any], animate: bool = False) -> None:
-    """Render straight from the agent's structured finding."""
-    hops = rc.get("lineage_hops") or [
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_staging.stg_yellow_trips,PROD)",
-        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_marts.fct_trip_features,PROD)",
-        "urn:li:mlFeatureTable:(urn:li:dataPlatform:duckdb,nyc_fare_features)",
-    ]
+def render_from_root_cause(
+    rc: dict[str, Any],
+    lineage_urns: list[str] | None = None,
+    model_name: str | None = None,
+    training_window: str | None = None,
+    animate: bool = False,
+) -> None:
+    """Render from the agent's finding plus what it actually traversed.
+
+    The hops come from tool calls made during the run. There is deliberately no
+    hardcoded fallback path: if the agent never walked the lineage, the diagram
+    says so rather than drawing a plausible-looking route it did not take.
+    """
+    hops = list(lineage_urns or [])
+    if not hops:
+        console.print(
+            "[yellow]  (no lineage hops recorded during this run, "
+            "so no path is drawn)[/yellow]"
+        )
+
     render_lineage_path(
         root_dataset=rc.get("root_cause_dataset", "?"),
         root_column=rc.get("root_cause_column", "?"),
         hops=hops,
         affected_features=rc.get("affected_features", []),
-        model_name=rc.get("model_name", "nyc_fare_predictor"),
-        trained_on=(rc.get("impact", {}) or {}).get("trained_on")
-        or rc.get("trained_on"),
+        model_name=model_name or "the model under investigation",
+        trained_on=training_window,
         animate=animate,
     )

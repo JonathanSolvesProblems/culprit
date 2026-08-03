@@ -105,7 +105,15 @@ class DataHubMCP:
         for block in result.content:
             text = getattr(block, "text", None)
             parts.append(text if text is not None else str(block))
-        return "\n".join(parts) if parts else "(no content)"
+        body = "\n".join(parts) if parts else "(no content)"
+
+        # MCP reports tool failures by setting isError on an otherwise normal
+        # response rather than raising. Without this check a failed write-back
+        # is indistinguishable from a successful one, which is a worse failure
+        # mode than crashing: the caller reports success and nothing was written.
+        if getattr(result, "isError", False):
+            raise RuntimeError(f"MCP tool {name!r} failed: {body}")
+        return body
 
     def __enter__(self) -> "DataHubMCP":
         self.start()

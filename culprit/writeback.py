@@ -37,14 +37,39 @@ def _gql(query: str, variables: dict[str, Any]) -> dict[str, Any]:
     return payload["data"]
 
 
-def raise_incident(model_urn: str, root_cause: dict[str, Any]) -> str:
-    """Raise a DataHub Incident on the degraded model."""
+def raise_incident(
+    model_urn: str, root_cause: dict[str, Any], source_dataset_urn: str | None = None
+) -> str:
+    """Raise a DataHub Incident covering the degraded model and its source.
+
+    Two details are load-bearing and were both verified against this instance's
+    live GraphQL schema rather than assumed:
+
+    * `IncidentType` has no DATA_QUALITY member. The valid set is FRESHNESS,
+      VOLUME, FIELD, SQL, DATA_SCHEMA, OPERATIONAL, CUSTOM. CUSTOM is the right
+      choice here because it carries a free-text `customType`, so the incident
+      renders the literal words "Semantic drift", which is the whole point.
+    * `priority` is an IncidentPriority enum (LOW / MEDIUM / HIGH / CRITICAL),
+      not an integer.
+
+    A third detail is a genuine platform limitation rather than a mistake:
+    **DataHub rejects mlModel URNs as incident resources.** Passing one returns
+    `Entity type for urn ... is invalid`. So the incident is raised on the
+    source dataset, which does support incidents and surfaces the red health
+    badge in search, and the affected model is named in the incident body
+    instead. See docs/DATAHUB_FINDINGS.md.
+    """
     impact = root_cause.get("impact", {}) or {}
-    dollars = impact.get("attributable_dollars")
+    # Prefer the difference-in-differences figure. Quoting the looser estimator
+    # in the artifact while the README headlines the stricter one is the
+    # cheapest possible way to lose a careful reviewer.
+    dollars = impact.get("did_attributable_dollars") or impact.get("attributable_dollars")
     rows = impact.get("affected_rows")
 
     description_lines = [
         root_cause.get("headline", "Silent model decay detected."),
+        "",
+        f"**Affected model:** `{model_urn}`",
         "",
         "## What changed",
         root_cause.get("change_description", ""),
@@ -71,6 +96,8 @@ def raise_incident(model_urn: str, root_cause: dict[str, Any]) -> str:
         "against the warehouse, net of a counterfactual control model.",
     ]
 
+    # Dataset only. mlModel URNs are rejected by the incident aspect.
+    resource_urns = [u for u in (source_dataset_urn,) if u]
     data = _gql(
         """
         mutation raiseIncident($input: RaiseIncidentInput!) {
@@ -79,19 +106,32 @@ def raise_incident(model_urn: str, root_cause: dict[str, Any]) -> str:
         """,
         {
             "input": {
-                "type": "DATA_QUALITY",
+                "type": "CUSTOM",
+                "customType": "Semantic drift",
                 "title": root_cause.get("headline", "Silent model decay")[:200],
-                "description": "\n".join(line for line in description_lines if line is not None),
-                "resourceUrn": model_urn,
-                "priority": 1,
+                "description": "\n".join(
+                    line for line in description_lines if line is not None
+                ),
+                "resourceUrns": resource_urns,
+                "priority": "HIGH",
             }
         },
     )
     return data["raiseIncident"]
 
 
-def save_trace_document(mcp: DataHubMCP, root_cause: dict[str, Any], trace_markdown: str) -> str:
-    """Store the full investigation as a DataHub knowledge document."""
+def save_trace_document(
+    mcp: DataHubMCP,
+    root_cause: dict[str, Any],
+    trace_markdown: str,
+    related_assets: list[str] | None = None,
+) -> str:
+    """Store the full investigation as a DataHub knowledge document.
+
+    `document_type` is required by the MCP tool, and `related_assets` is what
+    makes the document appear on the model and dataset pages rather than
+    sitting unlinked in the knowledge base.
+    """
     body = [
         f"# {root_cause.get('headline', 'Silent model decay')}",
         "",
@@ -116,8 +156,10 @@ def save_trace_document(mcp: DataHubMCP, root_cause: dict[str, Any], trace_markd
     return mcp.call(
         "save_document",
         {
+            "document_type": "Analysis",
             "title": f"Root cause: {root_cause.get('root_cause_column')} semantic change",
             "content": "\n".join(body),
+            "related_assets": [u for u in (related_assets or []) if u],
         },
     )
 
@@ -127,17 +169,24 @@ def annotate_source_column(
 ) -> list[str]:
     """Mark the offending column so its next reader inherits the finding."""
     results: list[str] = []
+    # DataHub concatenates on append with no separator, hence the leading blank
+    # lines. Appending rather than replacing preserves whatever a human wrote.
     note = (
-        f"[Culprit] {root_cause.get('change_description', '')} "
+        f"\n\n**[Culprit]** {root_cause.get('change_description', '')} "
         f"This column feeds {', '.join(root_cause.get('affected_features', [])[:4])} "
-        f"and caused measurable production model error. "
-        f"See the incident on {root_cause.get('root_cause_column')}'s downstream model."
+        f"and caused measurable error in a downstream production model. "
+        f"See the linked incident."
     )
     try:
         results.append(
             mcp.call(
                 "update_description",
-                {"urn": dataset_urn, "sub_resource": column, "description": note},
+                {
+                    "entity_urn": dataset_urn,
+                    "column_path": column,
+                    "operation": "append",
+                    "description": note,
+                },
             )
         )
     except Exception as exc:  # noqa: BLE001
@@ -156,11 +205,14 @@ def write_back_all(
     """Run every write-back step, reporting honestly on partial failure."""
     out: dict[str, Any] = {}
     try:
-        out["incident_urn"] = raise_incident(model_urn, root_cause)
+        out["incident_urn"] = raise_incident(model_urn, root_cause, source_dataset_urn)
     except Exception as exc:  # noqa: BLE001
         out["incident_error"] = str(exc)
     try:
-        out["document"] = save_trace_document(mcp, root_cause, trace_markdown)
+        out["document"] = save_trace_document(
+            mcp, root_cause, trace_markdown,
+            related_assets=[model_urn, source_dataset_urn],
+        )
     except Exception as exc:  # noqa: BLE001
         out["document_error"] = str(exc)
     try:

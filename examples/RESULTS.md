@@ -19,12 +19,40 @@ All figures are computed in SQL against real NYC TLC trip records.
 - max null percentage: 0.0%
 - row volume swing: 18.13%
 
-| monitor | would fire |
-|---|---|
-| freshness_monitor | no |
-| volume_monitor | no |
-| null_monitor | no |
-| schema_monitor | no |
+The metrics that fire are included. Testing only the ones that stay
+silent would be picking the scoreboard.
+
+| monitor | on `vendor_id` | on `avg_speed_mph` |
+|---|---|---|
+| freshness_monitor | silent | silent |
+| volume_monitor | silent | silent |
+| null_count_monitor | silent | silent |
+| schema_monitor | silent | silent |
+| empty_count_monitor | silent | silent |
+| negative_count_monitor | silent | FIRES |
+| unique_count_monitor | FIRES | FIRES |
+| zero_count_monitor | silent | FIRES |
+
+### The two that fire, and why neither is actionable
+
+- `unique_count` on `vendor_id` goes 3 to 4 in 2024-12. That is the same integer the max value already shows, and it names no model.
+
+- `zero_count` on `avg_speed_mph` climbs because the `coalesce` that dodges the null check lands the corruption in the zero count instead:
+
+| feed month | zero rows | share |
+|---|---:|---:|
+| 2024-06 | 43 | 0.0013% |
+| 2024-09 | 33 | 0.0010% |
+| 2024-12 | 255 | 0.0073% |
+| 2025-03 | 21,350 | 0.5580% |
+| 2025-06 | 66,174 | 1.6937% |
+
+In 2024-09, the month the defect entered production, that is 33 rows, 0.001% of the table, against a baseline that already swings between 33 and 43. It is indistinguishable from noise. The first month it is unmissable is 2025-03, a quarter after the model started serving the new vendor wrong.
+
+And when it does fire it says *some speeds are zero*. It does not name
+`nyc_fare_predictor`, does not name the retrain that baked it in, and does
+not produce a dollar figure. Detection was never the hard part.
+Attribution is.
 
 ## Model behaviour by vendor, real 2025-06
 

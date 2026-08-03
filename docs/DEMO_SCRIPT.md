@@ -15,24 +15,28 @@ than kept because they sounded better. See [the correction log](#correction-log)
 **On screen:** the `nyc_fare_predictor` model page in DataHub, then the monitor
 panel. Freshness green. Volume green. Null rate 0.0%. Schema unchanged.
 
-> "This is a fare model running on real New York City taxi data. Every monitor is
-> green. Freshness, volume, null rate, schema. Nothing has failed. Nothing has
-> alerted."
+> "This is a fare model running on real New York City taxi data. Freshness,
+> volume, null rate, schema: all green. Nothing failed. Nothing alerted."
 
 ## [0:12 - 0:26] The reveal
 
 **On screen:** the per-vendor error table, vendor 7 row highlighted.
 
-> "And on sixty-six thousand of last month's trips, it is forty-five percent less
-> accurate than it should be. It has been drifting for six months, and nobody
-> knows it."
+> "And on sixty-six thousand of last month's trips it carries forty-five percent
+> more error than the same model retrained with that vendor included. It has been
+> drifting for six months and nobody knows."
 
 ## [0:26 - 0:36] Why nothing caught it
 
 **On screen:** the monitor table, cutting to the `max` column going 6, 6, **7**.
 
-> "Here is the entire visible footprint of the problem. One integer. A column's
-> maximum value went from six to seven. No monitor on earth is watching that."
+> "Here is the whole signal at the source. One integer. A column's maximum value
+> went from six to seven."
+
+**Beat.** Do not overclaim here. The concession is the stronger line:
+
+> "Some checks do eventually notice. None of them tell you which model broke,
+> which retrain baked it in, or what it cost."
 
 ## [0:36 - 0:58] Culprit runs
 
@@ -75,11 +79,16 @@ panel. Freshness green. Volume green. Null rate 0.0%. Schema unchanged.
 | claim in script | measured value | source |
 |---|---|---|
 | "sixty-six thousand trips" | 66,146 | SQL, real 2025-06 |
-| "forty-five percent less accurate" | $4.606 vs $3.167 MAE = 45.4% worse | counterfactual control |
+| "forty-five percent more error" | $4.606 vs $3.167 MAE = 45.4% worse | counterfactual control |
 | "drifting for six months" | first appeared 2024-12, scored 2025-06 | real TLC feed |
 | "one integer, six to seven" | `max(vendor_id)` 6 -> 7 in 2024-12 | SQL |
 | "speed pinned to zero" | `avg_speed_mph` = 0.000 vs 11.59 baseline | SQL |
+| "a dollar thirty-seven a ride" | $1.3655 (difference-in-differences) | `examples/04_measured_impact.json` |
 | "ninety thousand dollars" | $90,322.36 | difference-in-differences |
+
+The per-trip figure is **$1.37**, never $1.44. $1.3655 x 66,146 = $90,322 checks
+out; the naive $1.4386 does not, and mixing the two is the fastest way to look
+careless.
 
 ## Correction log
 
@@ -98,6 +107,13 @@ Placeholders that the data contradicted, and what replaced them:
   number is the one on screen.
 - **"eleven seconds"** is removed until the agent has actually been timed. No
   runtime claim goes in the script before it is measured.
+- **"No monitor on earth is watching that"** was an overclaim and is cut. Running
+  the full sweep shows two metrics do fire: `unique_count` on `vendor_id` (3 to 4,
+  in 2024-12) and `zero_count` on `avg_speed_mph`. The honest version is stronger,
+  because at 2024-12 the zero count is 255 rows out of 3,502,209, against a
+  baseline already swinging 33 to 43, and it does not become unmissable until
+  2025-03, a quarter after the damage started. Neither signal names the model, the
+  retrain, or the cost. Detection was never the hard part. Attribution is.
 
 ## What is deliberately NOT in this demo
 

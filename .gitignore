@@ -34,3 +34,7 @@ Thumbs.db
 
 # dbt local user id
 pipeline/dbt/.user.yml
+
+# mcp-server-datahub caches DataHub's GraphQL schema into the working
+# directory at runtime. Not ours, and it is large.
+entity.graphql

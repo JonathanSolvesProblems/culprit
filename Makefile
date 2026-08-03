@@ -1,0 +1,73 @@
+# Culprit: one-command reproduction.
+#
+# A judge with Docker and Python 3.11/3.12 should be able to run `make demo`
+# and end up with a working DataHub instance, a real warehouse, a trained
+# model, full ML lineage in the graph, and a completed investigation.
+
+PY ?= python
+VENV := .venv
+BIN := $(VENV)/bin
+ifeq ($(OS),Windows_NT)
+	BIN := $(VENV)/Scripts
+endif
+
+.PHONY: help install datahub data transform ingest train score lineage investigate demo verify examples clean
+
+help:
+	@echo "make install      create venv and install dependencies"
+	@echo "make datahub      start DataHub OSS locally (Docker)"
+	@echo "make data         download real NYC TLC data into DuckDB"
+	@echo "make transform    run dbt build + docs generate"
+	@echo "make ingest       ingest dbt lineage into DataHub"
+	@echo "make train        train production model + counterfactual control"
+	@echo "make score        score the real 2025-06 month"
+	@echo "make lineage      emit ML entities into DataHub"
+	@echo "make investigate  run the Culprit agent (needs ANTHROPIC_API_KEY)"
+	@echo "make verify       prove the incident is real, no DataHub needed"
+	@echo "make demo         everything above, in order"
+
+install:
+	$(PY) -m venv $(VENV)
+	$(BIN)/python -m pip install --upgrade pip
+	$(BIN)/python -m pip install -r requirements.txt
+	$(BIN)/python -m pip install mcp-server-datahub
+
+datahub:
+	$(BIN)/datahub docker quickstart
+
+data:
+	$(BIN)/python pipeline/load_raw.py
+
+transform:
+	cd pipeline/dbt && DBT_PROFILES_DIR=. ../../$(BIN)/dbt build
+	cd pipeline/dbt && DBT_PROFILES_DIR=. ../../$(BIN)/dbt docs generate
+
+ingest:
+	cd pipeline && ../$(BIN)/datahub ingest -c ingest_dbt.yml
+
+train:
+	$(BIN)/python pipeline/train_model.py
+
+score:
+	$(BIN)/python pipeline/score_batch.py --month 2025-06
+
+lineage:
+	$(BIN)/python pipeline/emit_ml_lineage.py
+
+investigate:
+	$(BIN)/python -m culprit.cli investigate --write-back
+
+examples:
+	$(BIN)/python scripts/generate_examples.py
+
+# Independent verification that the incident is real. Needs no DataHub and no
+# API key. Run this first if you only have a few minutes.
+verify:
+	$(BIN)/python scripts/scan_tlc_semantics.py
+	$(BIN)/python scripts/validate_impact.py
+
+demo: datahub data transform ingest train score lineage investigate
+
+clean:
+	rm -f pipeline/warehouse.duckdb pipeline/warehouse.duckdb.wal
+	rm -rf pipeline/dbt/target pipeline/artifacts/*.pkl

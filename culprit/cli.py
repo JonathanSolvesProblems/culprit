@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from dataclasses import asdict
 from pathlib import Path
 
@@ -18,7 +19,8 @@ from rich.panel import Panel
 from rich.table import Table
 
 from culprit import datahub_graph as dg
-from culprit.agent import Investigation, investigate
+from culprit import trace_view
+from culprit.agent import Investigation, TraceStep, investigate
 from culprit.mcp_bridge import DataHubMCP
 from culprit.writeback import write_back_all
 
@@ -42,7 +44,7 @@ def _trace_markdown(inv: Investigation) -> str:
     return "\n".join(lines)
 
 
-def _render(inv: Investigation) -> None:
+def _render(inv: Investigation, animate: bool = False) -> None:
     rc = inv.root_cause
     if not rc:
         console.print(
@@ -64,6 +66,8 @@ def _render(inv: Investigation) -> None:
 
     console.print()
     console.print(Panel(rc.get("headline", ""), title="ROOT CAUSE", border_style="red"))
+
+    trace_view.render_from_root_cause(rc, animate=animate)
 
     table = Table(show_header=False, box=None, padding=(0, 2))
     table.add_row("[bold]Dataset[/bold]", rc.get("root_cause_dataset", ""))
@@ -119,6 +123,65 @@ def cmd_models(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_replay(args: argparse.Namespace) -> int:
+    """Render a previously recorded real investigation.
+
+    Included so a judge without an Anthropic API key can still see exactly what
+    Culprit produced on the real data, and so the demo is reproducible frame for
+    frame. This replays a recorded run; it does not re-derive anything.
+    """
+    path = EXAMPLES / "investigation.json"
+    if not path.exists():
+        console.print(
+            Panel(
+                f"No recorded investigation at {path}.\n"
+                "Run `python -m culprit.cli investigate` first, or pull the one "
+                "committed in examples/.",
+                title="Nothing to replay", border_style="red",
+            )
+        )
+        return 1
+
+    payload = json.loads(path.read_text())
+    console.print(
+        Panel(
+            payload.get("symptom", ""), title="Reported symptom", border_style="yellow"
+        )
+    )
+    console.print(
+        "\n[dim]Replaying a recorded run. "
+        f"{payload.get('tool_calls', '?')} tool calls, "
+        f"{payload.get('elapsed_seconds', '?')}s wall clock.[/dim]"
+    )
+
+    if args.animate:
+        for step in payload.get("trace", []):
+            args_preview = json.dumps(step.get("arguments", {}))
+            if len(args_preview) > 70:
+                args_preview = args_preview[:70] + "..."
+            console.print(
+                f"  [{step['index']:2d}] [cyan]{step['tool']}[/cyan]"
+                f"({args_preview})  [dim]{step['elapsed_ms']}ms[/dim]"
+            )
+            time.sleep(0.18)
+
+    inv = Investigation(
+        model_urn=payload.get("model_urn", ""),
+        root_cause=payload.get("root_cause"),
+        elapsed_seconds=payload.get("elapsed_seconds", 0.0),
+        turns=payload.get("turns", 0),
+    )
+    inv.trace = [
+        TraceStep(
+            index=s["index"], tool=s["tool"], arguments=s.get("arguments", {}),
+            elapsed_ms=s.get("elapsed_ms", 0), result_preview=s.get("result_preview", ""),
+        )
+        for s in payload.get("trace", [])
+    ]
+    _render(inv, animate=args.animate)
+    return 0
+
+
 def cmd_investigate(args: argparse.Namespace) -> int:
     console.print(Panel(args.symptom, title="Reported symptom", border_style="yellow"))
     console.print("\n[bold]Investigating[/bold]\n")
@@ -128,7 +191,7 @@ def cmd_investigate(args: argparse.Namespace) -> int:
         tools = mcp.start()
         console.print(f"[dim]DataHub MCP server: {len(tools)} tools available[/dim]\n")
         inv = investigate(args.model_urn, args.symptom, mcp=mcp, verbose=True)
-        _render(inv)
+        _render(inv, animate=args.animate)
 
         EXAMPLES.mkdir(exist_ok=True)
         payload = {
@@ -170,10 +233,20 @@ def main() -> int:
         func=cmd_models
     )
 
+    rep = sub.add_parser(
+        "replay",
+        help="Render a recorded real investigation. No API key needed.",
+    )
+    rep.add_argument(
+        "--animate", action="store_true", help="Reveal the trace step by step"
+    )
+    rep.set_defaults(func=cmd_replay)
+
     inv = sub.add_parser("investigate", help="Diagnose a degraded model")
     inv.add_argument("--model-urn", default=DEFAULT_MODEL_URN)
     inv.add_argument("--symptom", default=DEFAULT_SYMPTOM)
     inv.add_argument("--write-back", action="store_true", help="Write findings into DataHub")
+    inv.add_argument("--animate", action="store_true", help="Reveal the trace step by step")
     inv.add_argument(
         "--source-dataset-urn",
         default="urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.raw.yellow_trips,PROD)",

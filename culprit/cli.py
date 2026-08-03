@@ -111,10 +111,17 @@ def _render(inv: Investigation, animate: bool = False) -> None:
         for claim in rc["inferred"]:
             console.print(f"  [yellow]~[/yellow] {claim}")
 
-    console.print(
+    footer = (
         f"\n[dim]{len(inv.trace)} tool calls, {inv.turns} turns, "
-        f"{inv.elapsed_seconds}s wall clock[/dim]"
+        f"{inv.elapsed_seconds}s wall clock"
     )
+    if inv.llm_model:
+        footer += f" | {inv.llm_model}"
+    if inv.input_tokens or inv.output_tokens:
+        footer += f" | {inv.input_tokens:,} in / {inv.output_tokens:,} out tokens"
+    if inv.estimated_cost_usd is not None:
+        footer += f" | ~${inv.estimated_cost_usd:.3f}"
+    console.print(footer + "[/dim]")
 
 
 def cmd_models(_: argparse.Namespace) -> int:
@@ -201,6 +208,10 @@ def cmd_investigate(args: argparse.Namespace) -> int:
             "elapsed_seconds": inv.elapsed_seconds,
             "turns": inv.turns,
             "tool_calls": len(inv.trace),
+            "llm_model": inv.llm_model,
+            "input_tokens": inv.input_tokens,
+            "output_tokens": inv.output_tokens,
+            "estimated_cost_usd": inv.estimated_cost_usd,
             "trace": [asdict(s) for s in inv.trace],
         }
         (EXAMPLES / "investigation.json").write_text(json.dumps(payload, indent=2, default=str))

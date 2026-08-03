@@ -14,18 +14,15 @@ returned by SQL. That is a guardrail on the engine, not a replacement for it.
 from __future__ import annotations
 
 import json
-import os
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-import anthropic
-
 from culprit import datahub_graph as dg
 from culprit import warehouse as wh
+from culprit.llm import LLMClient, ToolResult, build_client
 from culprit.mcp_bridge import DataHubMCP
 
-MODEL = os.environ.get("CULPRIT_LLM_MODEL", "claude-sonnet-5")
 MAX_TURNS = 40
 
 SYSTEM = """\
@@ -92,6 +89,10 @@ class Investigation:
     elapsed_seconds: float = 0.0
     turns: int = 0
     stopped_reason: str = "completed"
+    llm_model: str = ""
+    input_tokens: int = 0
+    output_tokens: int = 0
+    estimated_cost_usd: float | None = None
 
 
 # --------------------------------------------------------------------------
@@ -310,14 +311,10 @@ def investigate(
     symptom: str,
     mcp: DataHubMCP | None = None,
     verbose: bool = True,
+    client: LLMClient | None = None,
 ) -> Investigation:
     """Run one investigation to a root cause."""
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise RuntimeError(
-            "ANTHROPIC_API_KEY is not set. Culprit's reasoning runs on a Claude model."
-        )
-    client = anthropic.Anthropic(api_key=api_key)
+    client = client or build_client()
 
     tools = list(LOCAL_TOOL_SPECS)
     mcp_specs: dict[str, dict[str, Any]] = {}
@@ -333,44 +330,36 @@ def investigate(
                     }
                 )
 
-    investigation = Investigation(model_urn=model_urn)
-    messages: list[dict[str, Any]] = [
-        {
-            "role": "user",
-            "content": (
-                f"Production model under investigation:\n  {model_urn}\n\n"
-                f"Reported symptom:\n  {symptom}\n\n"
-                "Diagnose it."
-            ),
-        }
-    ]
+    investigation = Investigation(model_urn=model_urn, llm_model=client.model)
+
+    client.start(SYSTEM, tools)
+    client.send_user(
+        f"Production model under investigation:\n  {model_urn}\n\n"
+        f"Reported symptom:\n  {symptom}\n\n"
+        "Diagnose it."
+    )
 
     started = time.perf_counter()
     step = 0
 
     for turn in range(MAX_TURNS):
         investigation.turns = turn + 1
-        response = client.messages.create(
-            model=MODEL, max_tokens=8000, system=SYSTEM, tools=tools, messages=messages
-        )
-        messages.append({"role": "assistant", "content": response.content})
+        response = client.step()
 
-        tool_uses = [b for b in response.content if b.type == "tool_use"]
         if verbose:
-            for block in response.content:
-                if block.type == "text" and block.text.strip():
-                    print(f"\n  [thinking] {_preview(block.text.strip(), 300)}")
+            for text in response.text:
+                print(f"\n  [thinking] {_preview(text, 300)}")
 
-        if not tool_uses:
+        if not response.tool_calls:
             investigation.stopped_reason = "model stopped without reporting"
             break
 
-        results: list[dict[str, Any]] = []
+        results: list[ToolResult] = []
         finished = False
 
-        for use in tool_uses:
+        for call in response.tool_calls:
             step += 1
-            name, args = use.name, dict(use.input)
+            name, args = call.name, call.arguments
             call_started = time.perf_counter()
 
             if name == "report_root_cause":
@@ -398,15 +387,18 @@ def investigate(
                 detail = ", ".join(f"{k}={v}" for k, v in list(args.items())[:2])
                 print(f"  [{step:2d}] {name}({_preview(detail, 90)})  {elapsed_ms}ms")
 
-            results.append(
-                {"type": "tool_result", "tool_use_id": use.id, "content": str(payload)[:20000]}
-            )
+            results.append(ToolResult(id=call.id, content=str(payload)[:20000]))
 
-        messages.append({"role": "user", "content": results})
+        # Tool results must go back even on the final turn: several providers
+        # reject a conversation with an unanswered tool call.
+        client.send_tool_results(results)
         if finished:
             break
     else:
         investigation.stopped_reason = "turn limit reached"
 
     investigation.elapsed_seconds = round(time.perf_counter() - started, 2)
+    investigation.input_tokens = client.input_tokens
+    investigation.output_tokens = client.output_tokens
+    investigation.estimated_cost_usd = client.estimated_cost_usd()
     return investigation

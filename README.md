@@ -254,13 +254,41 @@ python pipeline/score_batch.py --month 2025-06
 # 7. Emit the ML lineage that no sample datapack provides.
 python pipeline/emit_ml_lineage.py
 
-# 8. Run the investigation.
-export ANTHROPIC_API_KEY=sk-ant-...
+# 8. Run the investigation. Use whichever provider you already have.
+export OPENAI_API_KEY=sk-...          # or ANTHROPIC_API_KEY=sk-ant-...
 python -m culprit.cli investigate --write-back
 ```
 
-Step 8 is the only step that needs an API key. Steps 1 through 7 stand up the
-entire environment and can be verified on their own.
+Step 8 is the only step that needs a model. Steps 1 through 7 stand up the entire
+environment and can be verified on their own.
+
+**No API key at all?** Replay a recorded real investigation instead:
+
+```bash
+python -m culprit.cli replay --animate
+```
+
+### Choosing a model
+
+Culprit's reasoning is provider-agnostic, matching the convention DataHub's own
+Analytics Agent uses. It picks up whichever key is present, or you can be
+explicit with `LLM_PROVIDER` and `LLM_MODEL`. See [.env.example](.env.example).
+
+| provider | set | notes |
+|---|---|---|
+| OpenAI | `OPENAI_API_KEY` | defaults to `gpt-4o` |
+| Anthropic | `ANTHROPIC_API_KEY` | defaults to `claude-sonnet-5` |
+| Anything OpenAI-compatible | `OPENAI_BASE_URL` | Ollama, LiteLLM, vLLM. Free and local. |
+
+A full investigation is roughly 15 to 30 tool calls. Every run prints its own
+token usage and an estimated cost, so you can see exactly what it costs rather
+than guessing.
+
+A local model through Ollama costs nothing and the code path is identical. Be
+aware that this is a genuinely hard multi-step reasoning task (notice the
+anomaly, choose what to walk, form a hypothesis, test it), and smaller local
+models are noticeably weaker at it. The recorded investigation in `examples/`
+notes which model produced it.
 
 To confirm the incident is real before trusting anything else here:
 
@@ -329,7 +357,9 @@ docs/              strategy and demo script
 
 The reasoning is the model's. Which features look wrong, which columns to walk
 back to, what a change in those values means, and whether a hypothesis survives
-are all decided by the agent.
+are all decided by the agent. Which *vendor* of model is deliberately not
+Culprit's business: the agent is provider-agnostic and the tool loop is
+identical across OpenAI, Anthropic and any OpenAI-compatible local server.
 
 The deterministic layer exists for one narrow reason: **the model is never asked
 to produce a number.** Every dollar figure and row count is returned by SQL and

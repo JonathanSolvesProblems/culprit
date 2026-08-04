@@ -27,6 +27,20 @@ figure is the one quoted. Methodology, including the ways it could be wrong, in
 
 Per trip, that is **$1.37**.
 
+### See it without installing anything
+
+No API key, no Docker, no DataHub instance. This renders a real recorded
+investigation, including its timestamps and cost:
+
+```bash
+git clone https://github.com/JonathanSolvesProblems/culprit && cd culprit
+pip install -r requirements.txt
+python -m culprit.cli replay --animate
+```
+
+The full environment (real DataHub, real warehouse, live write-back) is one
+command further down, in [Quickstart](#quickstart).
+
 ## The problem
 
 Model monitoring does root-cause analysis inside the model boundary. Data
@@ -236,17 +250,29 @@ Only then does it open a PR. Sample artifacts:
 [examples/generated_fix.sql](examples/generated_fix.sql),
 [examples/remediation.json](examples/remediation.json).
 
-**This is not decoration, and the first attempt failed gate 2 and 3.** The model
-proposed:
+**This is not decoration, and the first attempt failed two of the three gates.**
+The model proposed:
 
 ```sql
 + where vendor_id in (1, 2, 6)
 ```
 
-That does not encode the new vendor. It **deletes all 66,146 of its trips**. It
-compiles cleanly and `dbt build` passes, so any check based on "does the patch
-look reasonable" would have shipped it, and the symptom would have vanished along
-with the data. The row-count gate caught it and refused the PR.
+That does not encode the new vendor. It **deletes all 87,693 of its rows** (66,146
+of them in the month we priced). It compiles cleanly and `dbt build` passes, so any
+check based on "does this patch look reasonable" would have shipped it, and the
+symptom would have vanished along with the data.
+
+The gate output is committed, not just described. From
+[examples/remediation_rejected.json](examples/remediation_rejected.json),
+reproducible with `python scripts/capture_rejected_patch.py`:
+
+| gate | result |
+|---|---|
+| `dbt build` succeeds | **PASS** |
+| affected rows now match a category | **FAIL** |
+| no other segment's row count changed | **FAIL** |
+| rows destroyed | **87,693** |
+| outcome | **REJECTED. Pull request not opened.** |
 
 After tightening the constraint to forbid changing the row population, the
 accepted patch was better than the obvious hand-written fix:

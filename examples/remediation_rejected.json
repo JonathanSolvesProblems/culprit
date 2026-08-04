@@ -1,0 +1,49 @@
+{
+  "note": "Replay of the patch Culprit's own verification rejected. The model proposed it on the first remediation attempt. It compiles, dbt builds it successfully, and it removes the symptom by deleting the affected rows rather than encoding them. No pull request was opened.",
+  "rejected_patch": "where vendor_id in (1, 2, 6)",
+  "gates": {
+    "dbt_build_ok": true,
+    "defect_resolved": false,
+    "row_counts_unchanged": false,
+    "passed": false
+  },
+  "rows_destroyed_by_segment": {
+    "7": 87693
+  },
+  "row_counts": {
+    "before": {
+      "1": 4075707,
+      "2": 13953170,
+      "6": 2169,
+      "7": 87693
+    },
+    "after": {
+      "1": 4075707,
+      "2": 13953170,
+      "6": 2169
+    }
+  },
+  "indicator_check": {
+    "before": {
+      "indicators": [
+        "is_vendor_cmt",
+        "is_vendor_curb",
+        "is_vendor_myle"
+      ],
+      "mean_active_indicators": 0.0,
+      "rows": 87693,
+      "all_zero": true
+    },
+    "after": {
+      "indicators": [
+        "is_vendor_cmt",
+        "is_vendor_curb",
+        "is_vendor_myle"
+      ],
+      "mean_active_indicators": 0.0,
+      "rows": 0,
+      "all_zero": true
+    }
+  },
+  "outcome": "REJECTED. Pull request not opened."
+}

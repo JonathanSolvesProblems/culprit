@@ -8,7 +8,8 @@
     "is_vendor_curb",
     "is_vendor_myle"
   ],
-  "note": "degenerate_in_segment lists inputs with zero variance within that segment. Compare each against the same input in other segments before concluding anything.",
+  "reference_segment": 2,
+  "note": "Three signals, all computed from the data:\n  degenerate_in_segment: inputs with zero variance inside the segment.\n  degenerate_only_in_this_segment: the same, minus whatever is also degenerate in the largest segment. These are the real leads.\n  all_indicators_zero: every 0/1 category indicator is 0 for this segment, meaning these rows match no category the encoder knows. That is a distinct defect from a collapsed value, and a segment can have BOTH at once. Account for every signal that fires, not the first one you notice.",
   "segments": [
     {
       "segment": 2,
@@ -27,7 +28,14 @@
         "is_vendor_cmt",
         "is_vendor_curb",
         "is_vendor_myle"
-      ]
+      ],
+      "degenerate_only_in_this_segment": [],
+      "indicator_inputs": [
+        "is_vendor_cmt",
+        "is_vendor_curb",
+        "is_vendor_myle"
+      ],
+      "all_indicators_zero": false
     },
     {
       "segment": 1,
@@ -46,7 +54,14 @@
         "is_vendor_cmt",
         "is_vendor_curb",
         "is_vendor_myle"
-      ]
+      ],
+      "degenerate_only_in_this_segment": [],
+      "indicator_inputs": [
+        "is_vendor_cmt",
+        "is_vendor_curb",
+        "is_vendor_myle"
+      ],
+      "all_indicators_zero": false
     },
     {
       "segment": 7,
@@ -67,7 +82,17 @@
         "is_vendor_cmt",
         "is_vendor_curb",
         "is_vendor_myle"
-      ]
+      ],
+      "degenerate_only_in_this_segment": [
+        "avg_speed_mph",
+        "trip_minutes"
+      ],
+      "indicator_inputs": [
+        "is_vendor_cmt",
+        "is_vendor_curb",
+        "is_vendor_myle"
+      ],
+      "all_indicators_zero": true
     },
     {
       "segment": 6,
@@ -86,7 +111,14 @@
         "is_vendor_cmt",
         "is_vendor_curb",
         "is_vendor_myle"
-      ]
+      ],
+      "degenerate_only_in_this_segment": [],
+      "indicator_inputs": [
+        "is_vendor_cmt",
+        "is_vendor_curb",
+        "is_vendor_myle"
+      ],
+      "all_indicators_zero": false
     }
   ]
 }

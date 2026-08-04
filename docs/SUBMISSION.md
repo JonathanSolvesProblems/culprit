@@ -20,10 +20,20 @@ public NYC Taxi and Limousine Commission feed. In December 2024 a new taxi vendo
 started reporting trips under `VendorID = 7`. It showed up with 230 trips, about
 six thousandths of one percent of that month. By June 2025 it was 67,573 trips.
 
-Nothing about that change is detectable by conventional monitoring. The column
-kept its name, its integer type, its zero null rate and its normal row volume.
-The only visible trace in the entire feed is a single column's maximum value
-going from 6 to 7.
+Freshness, volume, null-rate and schema checks all stayed green. The column kept
+its name, its integer type, its zero null rate and its normal row volume, and the
+only visible trace at the source is a single column's maximum value going from
+6 to 7.
+
+I ran the fuller sweep too, rather than only the checks that flatter the story,
+and two metrics do fire. `unique_count` on `vendor_id` goes 3 to 4 in December
+2024, which is the same integer the max already shows and names no model.
+`zero_count` on the derived speed feature climbs, but in December 2024 that is
+255 rows out of 3,502,209, against a baseline already swinging between 33 and 43.
+It does not become unmissable until March 2025, a quarter after the model started
+serving the new vendor wrong. And when it fires it says *some speeds are zero*.
+
+That is the actual argument. Detection was never the hard part. Attribution is.
 
 Meanwhile any fare model trained before December 2024 has a one-hot encoder that
 was written when only vendors 1, 2 and 6 existed. Every vendor-7 trip now tells
@@ -74,10 +84,20 @@ end:
   the DataHub Python SDK. Each feature records the source column it derives from,
   which is what makes the walk from model back to column possible.
 - **DataHub's own MCP server** (`mcp-server-datahub` 0.6.0) launched over stdio,
-  exposing 19 tools to the agent. Culprit does not reimplement catalog access.
+  exposing 21 tools. Six are allowlisted into the investigation loop; the
+  mutation tools are deliberately held back for the explicit write-back step.
+  Culprit does not reimplement catalog access.
 - **A real sklearn model** trained on 6.88M rows, plus a counterfactual control.
-- **Real write-back**: `raiseIncident` on the affected model, `save_document` for
-  the full trace, and an annotation on the offending source column.
+- **Real write-back**: `raiseIncident` (`CUSTOM` / "Semantic drift" / `HIGH`),
+  `save_document` for the full trace, and an annotation appended to the offending
+  source column. The incident lands on the source dataset rather than the model
+  because DataHub rejects `mlModel` URNs as incident resources outright. That is
+  a platform gap I hit, documented, and am filing upstream.
+- **A generated fix that has to prove itself.** `culprit fix` locates the
+  transformation at fault, patches it, then runs `dbt build` against the real
+  warehouse and checks three gates before proposing anything: the build succeeds,
+  the affected rows now match a category, and no other segment's row count
+  changed. Only then does it open a PR.
 
 The agent is genuinely uninstructed. Nothing about taxis, vendors, or one-hot
 encoding appears anywhere in its system prompt. It gets a model URN, tools, and a
@@ -163,10 +183,21 @@ same traversal handles them; they need their own real examples.
 
 ## Open-source contribution
 
-I contributed a `datahub-ml-lineage` skill to the DataHub Skills registry. Five
-catalog skills exist today and none cover ML. It documents the ML metamodel, the
-model-to-column walk, the impact-analysis direction, and the SDK type traps above
-that cost me real debugging time.
+I drafted a `datahub-ml-lineage` skill for the DataHub Skills registry, then
+found that PR #77 on that repo, opened two days before mine by another
+contributor, ships a skill with the identical name and path. So I did not file
+it. Submitting a near-duplicate of somebody else's open PR would add noise to a
+repo already carrying 56 of them, and would read as derivative even though it was
+not.
+
+The draft stays in the repo at `contrib/datahub-skills/` as working evidence, and
+the effort is redirected to something genuinely unclaimed: an issue against
+DataHub Core for the mlModel incident rejection (finding #1 in
+`docs/DATAHUB_FINDINGS.md`), plus a documentation fix listing which entity types
+the incident aspect actually accepts. That failure currently surfaces as a runtime
+exception rather than a validation message naming the allowed set.
+
+The full list of eight verified findings is in `docs/DATAHUB_FINDINGS.md`.
 
 ## Built with
 

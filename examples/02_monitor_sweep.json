@@ -68,6 +68,7 @@
     "unique_count_first_change": {
       "month": "2024-12",
       "from": 3,
+      "prior_max": 3,
       "to": 4,
       "share_of_rows_pct": null
     },
@@ -143,15 +144,17 @@
     "unique_count_first_change": {
       "month": "2024-09",
       "from": 753298,
+      "prior_max": 753298,
       "to": 810336,
       "share_of_rows_pct": null
     },
     "zero_count_monitor_would_fire": true,
     "zero_count_first_change": {
-      "month": "2024-09",
+      "month": "2024-12",
       "from": 43.0,
-      "to": 33.0,
-      "share_of_rows_pct": 0.001
+      "prior_max": 43.0,
+      "to": 255.0,
+      "share_of_rows_pct": 0.0073
     }
   }
 }

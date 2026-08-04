@@ -29,9 +29,18 @@ Per trip, that is **$1.37**.
 
 ## The problem
 
-Drift tools tell you **what** moved. They cannot tell you **why**, because they
-have no lineage. Lineage tools show you the path, but have no idea anything is
-wrong. Neither one fires at all for the failure class that costs the most:
+Model monitoring does root-cause analysis inside the model boundary. Data
+observability does it inside the data boundary. Both are good at that now:
+Monte Carlo ships a lineage-walking troubleshooting agent, Arize links drift to
+features, Fiddler markets execution-context lineage. I am not claiming otherwise.
+
+Neither side holds the fact that decides this case, because it lives on the
+boundary between them: **which category values the deployed encoder was actually
+fitted on.** That fact sits in the ML lineage, next to the training run, and it
+is what turns "this feature moved" into "this model was never taught this value,
+here is the retrain that baked it in, here is what it cost."
+
+That gap is widest for the failure class that costs the most:
 
 **A column keeps its name, its type, its null rate and its row count, but changes
 its meaning.**
@@ -153,9 +162,15 @@ upward, nobody knows why"). It then:
 6. Quantifies the damage in dollars, in SQL, net of a control.
 7. Writes the finding back into DataHub.
 
-Nothing about taxis, vendors, or one-hot encoding appears in
-[`culprit/agent.py`](culprit/agent.py). The agent is given tools and a method,
-and it works the problem.
+Nothing about taxis, vendors, or one-hot encoding appears in the system prompt or
+the tool catalogue in [`culprit/agent.py`](culprit/agent.py), and both
+`segment_column` and `segment_value` are required parameters with no defaults, so
+the agent has to work out which column defines the segments and which value is the
+outlier before it can ask about either.
+
+Worth stating because I got it wrong once: an earlier version carried
+`"default": "vendor_id"` in two tool schemas, which quietly handed over half the
+answer while this README claimed otherwise. It was caught in review and removed.
 
 ## The recorded run
 
@@ -238,7 +253,13 @@ The PR body states plainly that correcting the transformation stops new rows
 being mis-encoded but does **not** repair the deployed model, which never trained
 on this value. That still needs a retrain.
 
-## The trace it produces
+## The graph Culprit walks
+
+This is the shape of the graph, not a transcript. What a given run actually
+printed depends on which hops it visited: [`trace_view.py`](culprit/trace_view.py)
+has no hardcoded fallback path and says so when nothing was traversed. The real
+printed trace for the recorded run is in
+[examples/terminal_investigation.txt](examples/terminal_investigation.txt).
 
 ```
 raw.yellow_trips.vendor_id            <- root cause, new value 7 from 2024-12
@@ -285,10 +306,18 @@ half of the graph comes from DataHub's native dbt connector parsing real
 column-level `fineGrainedLineage`.
 
 **Writes findings back.** [`culprit/writeback.py`](culprit/writeback.py) raises a
-DataHub **Incident** on the affected `mlModel` via `raiseIncident`, saves the full
+DataHub **Incident** (`CUSTOM` / "Semantic drift" / `HIGH`), saves the full
 investigation as a knowledge **document** via the MCP `save_document` tool, and
 annotates the offending source column so the next person or agent who opens it
 inherits the finding instead of rediscovering it.
+
+The incident is raised on the **source dataset**, not on the model, and that is
+not a design preference. DataHub rejects `mlModel` URNs as incident resources
+outright (`Entity type for urn ... is invalid`), so a degraded model cannot
+currently carry its own incident. The affected model is named in the incident
+body instead. This is finding #1 in
+[docs/DATAHUB_FINDINGS.md](docs/DATAHUB_FINDINGS.md) and is the platform gap I am
+filing upstream.
 
 ## Measuring the damage
 
@@ -330,13 +359,34 @@ $1.3655 x 66,146 trips = $90,322.36
 Both estimators are returned by `measure_attributable_error`. The stricter one is
 the headline.
 
-**What this number is:** the model's prediction error on affected trips, in
-dollars, that the fix actually recovers.
+**What this number is:** the cost of serving six months of trips from a vendor the
+deployed model was never fitted on, priced as mean absolute prediction error
+against a counterfactual control.
 
-**What it is not:** realised revenue loss. Whether prediction error becomes real
-money depends on whether the model drives upfront pricing. The honest exposure
-figure is separate: **$1,698,233.95 of gross fare flowed through the affected
-trips.**
+**What it is not:** realised revenue loss, and not a figure the dbt patch alone
+recovers. Two things are needed for full repair: the patch stops new rows landing
+in no category, and a **retrain on a window containing the vendor** recovers the
+rest. Culprit says so in the PR rather than implying the fix is complete.
+
+**Loss model, stated plainly.** This is a sum of *absolute* errors, priced under
+symmetric loss, because a mis-quote in either direction is a customer-experience
+and reconciliation cost. The signed net on vendor 7 is **-$13,876**, meaning the
+model under-quotes those trips on average. Both numbers are true and they answer
+different questions; quoting only the second would understate a real problem, and
+quoting only the first without saying so would overstate it.
+
+**A caveat I would rather state than be asked.** The two model arms differ on two
+things at once: the training window and the encoder. A third arm would be needed
+to cleanly separate "the model never saw this vendor" from "the encoder has no
+slot for it", and in this case the training-window effect almost certainly
+dominates, because in the control window `(0,0,0)` maps one-to-one onto vendor 7
+and a depth-8 tree can isolate that leaf without the extra column. The
+DataHub-native fact underneath is unaffected and is the real point: **the graph
+recorded `vendors_in_training_data = [1,2,6]` while the warehouse was serving
+vendor 7, and no other system holds both of those facts.**
+
+The honest exposure figure is separate: **$1,698,233.95 of gross fare flowed
+through the affected trips.**
 
 **Vendor 6 is a real second finding, not noise.** It shows a $1.387 gap and an
 average speed of 61.95 mph, which is not plausible for Manhattan taxi traffic. I
@@ -453,7 +503,7 @@ to be explicit about every component:
 | Dataset lineage | **Real,** ingested by DataHub's dbt connector, not asserted. |
 | ML lineage | **Real** DataHub ML entities via the Python SDK. |
 | DataHub | **Real** OSS instance in Docker. Not mocked. |
-| MCP server | **Real** `mcp-server-datahub` 0.6.0 over stdio, 19 tools. |
+| MCP server | **Real** `mcp-server-datahub` 0.6.0 over stdio. 21 tools exposed, 6 allowlisted into the investigation loop; mutations are held back for the explicit write-back step. |
 | The model | **Real** sklearn model trained on 6.88M rows. |
 | The damage | **Real,** computed in SQL, net of a control. |
 | Write-back | **Real** `raiseIncident` and `save_document` against the live instance. |

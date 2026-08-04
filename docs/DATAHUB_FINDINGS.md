@@ -120,10 +120,23 @@ depending on which API you are on. A subselection on it fails with
 
 ## Intended contributions
 
-1. **`datahub-ml-lineage` skill** for the DataHub Skills registry, drafted at
-   [`contrib/datahub-skills/skills/datahub-ml-lineage/SKILL.md`](../contrib/datahub-skills/skills/datahub-ml-lineage/SKILL.md).
-   Five catalog skills exist and none cover ML. It encodes items 7 and 8 above so
-   the next person does not lose the same hour.
-2. **Issue on incident resource types** (item 1), including the workaround.
-3. **Documentation note** on items 5 and 6, which are both cases where a call
-   reports success while doing nothing observable.
+1. **Issue on incident resource types** (item 1). Unclaimed as of Aug 4 2026, and
+   the highest-value of the three: the failure is a runtime exception rather than
+   a validation message naming the allowed set, and it blocks the obvious ML
+   observability workflow.
+2. **Documentation fix** listing the entity types the incident aspect accepts,
+   following the issue.
+3. **Documentation note** on items 5 and 6, both cases where a call reports
+   success while doing nothing observable.
+
+### A skill I drafted and deliberately did not file
+
+[`contrib/datahub-skills/skills/datahub-ml-lineage/SKILL.md`](../contrib/datahub-skills/skills/datahub-ml-lineage/SKILL.md)
+encodes items 7 and 8 above. I did not open a PR for it: **PR #77 on
+`datahub-project/datahub-skills`, opened 2026-08-02, already adds a skill with the
+identical name and path**, and that repo has 56 open PRs with one merge. Filing a
+near-duplicate two days later would add noise and read as derivative.
+
+The draft stays here as working evidence, and the effort went upstream to the
+issue above, which nothing else claims. Noting this because finding out from a
+judge would be worse than saying it first.

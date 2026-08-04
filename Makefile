@@ -22,7 +22,9 @@ help:
 	@echo "make train        train production model + counterfactual control"
 	@echo "make score        score the real 2025-06 month"
 	@echo "make lineage      emit ML entities into DataHub"
-	@echo "make investigate  run the Culprit agent (needs ANTHROPIC_API_KEY)"
+	@echo "make investigate  run the Culprit agent (needs any provider key, see .env.example)"
+	@echo "make fix          generate the repair, prove it with dbt, optionally open a PR"
+	@echo "make replay       render a recorded real run, no API key needed"
 	@echo "make verify       prove the incident is real, no DataHub needed"
 	@echo "make demo         everything above, in order"
 
@@ -56,6 +58,12 @@ lineage:
 
 investigate:
 	$(BIN)/python -m culprit.cli investigate --write-back
+
+fix:
+	$(BIN)/python -m culprit.cli fix
+
+replay:
+	$(BIN)/python -m culprit.cli replay --animate
 
 examples:
 	$(BIN)/python scripts/generate_examples.py

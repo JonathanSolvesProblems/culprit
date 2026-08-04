@@ -47,7 +47,7 @@ silent would be picking the scoreboard.
 | 2025-03 | 21,350 | 0.5580% |
 | 2025-06 | 66,174 | 1.6937% |
 
-In 2024-09, the month the defect entered production, that is 33 rows, 0.001% of the table, against a baseline that already swings between 33 and 43. It is indistinguishable from noise. The first month it is unmissable is 2025-03, a quarter after the model started serving the new vendor wrong.
+In 2024-12, the month the defect entered production, that is 255 rows, 0.0073% of the table, against a baseline that already swings between 33 and 43. It is indistinguishable from noise. The first month it is unmissable is 2025-03, a quarter after the model started serving the new vendor wrong.
 
 And when it does fire it says *some speeds are zero*. It does not name
 `nyc_fare_predictor`, does not name the retrain that baked it in, and does

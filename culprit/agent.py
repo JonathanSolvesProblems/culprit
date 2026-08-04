@@ -2,9 +2,17 @@
 
 The model is the engine here. It decides which features look wrong, which
 columns to walk back to, what the change in those columns means, and whether a
-hypothesis survives contact with the evidence. Nothing about the NYC taxi feed,
-vendor codes or one-hot encoding is written into this file. The agent is given
-a model URN and a set of tools, and it works the problem.
+hypothesis survives contact with the evidence.
+
+Nothing about the NYC taxi feed, vendor codes or one-hot encoding appears in the
+system prompt or the tool catalogue: `grep -i vendor culprit/agent.py` returns
+only this paragraph. Both `segment_column` and `segment_value` are required
+parameters with no defaults, so the agent has to discover which column defines
+the segments and which value is the outlier before it can ask about either.
+
+An earlier version of this file did carry `"default": "vendor_id"` in two tool
+schemas, which quietly handed the agent the answer while the README claimed
+otherwise. That is worth recording rather than silently deleting.
 
 The deterministic layer underneath (culprit/warehouse.py) exists so the agent
 cannot invent a number. Every dollar and every row count in the final report is
@@ -78,6 +86,18 @@ Method:
      over a column that merely computes differently for the affected rows.
    - Sanity check: the root cause should explain every other anomaly you found.
      If it explains only some, you have picked a symptom.
+
+   Corroborate the column you settle on against the lineage graph before
+   reporting it, rather than relying on the warehouse alone.
+
+Two statistical cautions, because getting either wrong puts a false statement
+into the catalogue that other people and agents will inherit:
+
+- A distinct-value count on a continuous column grows with row count. Do not
+  call an increase anomalous unless it outpaces the growth in rows.
+- A value collapsing to a constant and a category going unmapped are DIFFERENT
+  defects with different causes. Do not explain one by the other. If both are
+  present, say so as two findings.
 4. Profile those source columns over time. You are looking for a change in the
    set of values, not a change in volume or shape.
 5. Form a hypothesis that explains the mechanism end to end: source change ->
@@ -235,7 +255,16 @@ LOCAL_TOOL_SPECS: list[dict[str, Any]] = [
         ),
         "input_schema": {
             "type": "object",
-            "properties": {"segment_column": {"type": "string", "default": "vendor_id"}},
+            "properties": {
+                "segment_column": {
+                    "type": "string",
+                    "description": (
+                        "Column whose values define the segments to compare. "
+                        "Choose it from the schema; there is no default."
+                    ),
+                },
+            },
+            "required": ["segment_column"],
         },
     },
     {
@@ -248,7 +277,13 @@ LOCAL_TOOL_SPECS: list[dict[str, Any]] = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "segment_column": {"type": "string", "default": "vendor_id"},
+                "segment_column": {
+                    "type": "string",
+                    "description": (
+                        "Column whose values define the segments to compare. "
+                        "Choose it from the schema; there is no default."
+                    ),
+                },
                 "segment_value": {"type": ["integer", "string"]},
             },
             "required": ["segment_value"],

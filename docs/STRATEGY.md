@@ -28,9 +28,14 @@ Four challenge winners at $3,000, one per category.
 
 Why it holds:
 
-- **Drift tools** (Evidently, Arize, WhyLabs, Fiddler, Monte Carlo) detect that a
-  feature distribution moved. They have no lineage, so they cannot say what caused it.
-  They also fire *after* the damage, at serving time.
+- **Model monitoring** (Evidently, Arize, WhyLabs, Fiddler) detects that a feature
+  distribution moved, and increasingly traces it back through features. Corrected
+  Aug 2026: the earlier wording here said these tools "have no lineage", which is
+  no longer true and was load-bearing. What they do not hold is the deployed
+  model's fitted category set.
+- **Data observability** (Monte Carlo, Sifflet, Metaplane) traces incidents through
+  warehouse lineage, and Monte Carlo now does so agentically. It stops at the
+  warehouse boundary; the model is not in its graph.
 - **Lineage tools** (including DataHub's own column-level lineage) show the path but
   have no signal that anything is wrong.
 - **DataHub Smart Assertions** detect statistical anomalies in freshness, volume, and

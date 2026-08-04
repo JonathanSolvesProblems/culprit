@@ -350,12 +350,20 @@ def check_standard_monitors(dataset: str, column: str) -> dict[str, Any]:
     swing = (max(volumes) - min(volumes)) / max(volumes) if volumes else 0.0
 
     def first_change(metric: str) -> dict[str, Any] | None:
-        """First month a metric departs from its opening value."""
+        """First month a metric exceeds every value seen before it.
+
+        Strict exceedance of the running prior maximum, not mere difference from
+        the opening value. A metric that merely wobbles (43 then 33) would
+        otherwise report month two as the moment the defect appeared, which is
+        both wrong and self-contradicting when the same output also states the
+        baseline range.
+        """
         if not months:
             return None
         baseline = months[0][metric]
+        running_max = baseline
         for m in months[1:]:
-            if m[metric] != baseline:
+            if m[metric] > running_max:
                 share = (
                     round(100.0 * m[metric] / m["row_volume"], 4)
                     if metric.endswith("_count") and metric != "unique_count"
@@ -364,9 +372,11 @@ def check_standard_monitors(dataset: str, column: str) -> dict[str, Any]:
                 return {
                     "month": m["feed_month"],
                     "from": baseline,
+                    "prior_max": running_max,
                     "to": m[metric],
                     "share_of_rows_pct": share,
                 }
+            running_max = max(running_max, m[metric])
         return None
 
     unique_change = first_change("unique_count")

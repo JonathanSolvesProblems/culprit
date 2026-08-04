@@ -81,7 +81,10 @@ def raise_incident(
         root_cause.get("why_monitors_missed_it", ""),
         "",
         "## Measured impact",
-        f"- Attributable prediction error: ${dollars:,.2f}" if isinstance(dollars, (int, float)) else "",
+        f"- Attributable prediction error: ${dollars:,.2f} "
+        f"(mean absolute error against a counterfactual control; model error priced "
+        f"per row under symmetric loss, not realised revenue)"
+        if isinstance(dollars, (int, float)) else "",
         f"- Affected rows: {rows:,}" if isinstance(rows, (int, float)) else "",
         f"- Attributable error per row: ${impact.get('attributable_mae_per_row')}",
         "",
@@ -94,6 +97,10 @@ def raise_incident(
         "---",
         "Raised automatically by Culprit. Every figure above was computed in SQL "
         "against the warehouse, net of a counterfactual control model.",
+        "",
+        "Correcting the transformation stops new rows being mis-encoded. It does "
+        "not repair the deployed model, which was trained before this value "
+        "existed. A retrain is required for the measured error to go away.",
     ]
 
     # Dataset only. mlModel URNs are rejected by the incident aspect.

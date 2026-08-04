@@ -50,13 +50,18 @@ Step 8 "Emit ML lineage into DataHub"
 & $py (Join-Path $root "pipeline\emit_ml_lineage.py")
 
 Step 9 "Investigate"
-if (-not $env:ANTHROPIC_API_KEY) {
-    Write-Host "ANTHROPIC_API_KEY is not set, so the agent cannot run." -ForegroundColor Yellow
-    Write-Host "Everything else is now standing up. Set the key and run:" -ForegroundColor Yellow
-    Write-Host "  .venv\Scripts\python.exe -m culprit.cli investigate --write-back"
+# No key check here. Culprit is provider-agnostic and reads .env inside the CLI,
+# so testing one provider's environment variable would wrongly bail out for
+# anyone using another provider, or using a .env file at all.
+& $py -m culprit.cli investigate --write-back
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "`nThe investigation did not complete." -ForegroundColor Yellow
+    Write-Host "Everything else is up. Set a provider key in .env (see .env.example)," -ForegroundColor Yellow
+    Write-Host "then run:  .venv\Scripts\python.exe -m culprit.cli investigate --write-back"
+    Write-Host "`nOr see a recorded real run with no key at all:" -ForegroundColor Yellow
+    Write-Host "  .venv\Scripts\python.exe -m culprit.cli replay --animate"
     Write-Host "`nDataHub UI: http://localhost:9002  (datahub / datahub)"
     exit 0
 }
-& $py -m culprit.cli investigate --write-back
 
 Write-Host "`nDone. DataHub UI: http://localhost:9002  (datahub / datahub)" -ForegroundColor Green

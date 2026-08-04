@@ -24,18 +24,31 @@ from mcp.client.stdio import stdio_client
 GMS = os.environ.get("DATAHUB_GMS_URL", "http://localhost:8080")
 
 
-def _find_server() -> str | None:
-    """Locate the mcp-server-datahub executable.
+def _find_server() -> list[str] | None:
+    """Build the command that launches DataHub's MCP server.
 
-    Checked next to the running interpreter first, so an activated virtualenv
-    works without the caller having to put its Scripts directory on PATH.
+    Prefers `python -m mcp_server_datahub` over the console-script executable.
+    Running the module through the interpreter already in use is more portable
+    (no PATH or Scripts-directory assumptions, identical on POSIX and Windows),
+    and it avoids Windows Application Control blocking the unsigned shim that
+    pip generates, which fails with WinError 4551.
+
+    Falls back to the executable if the package is not importable here.
     """
+    try:
+        import mcp_server_datahub  # noqa: F401
+
+        return [sys.executable, "-m", "mcp_server_datahub"]
+    except ImportError:
+        pass
+
     scripts_dir = Path(sys.executable).parent
     for name in ("mcp-server-datahub.exe", "mcp-server-datahub"):
         candidate = scripts_dir / name
         if candidate.exists():
-            return str(candidate)
-    return shutil.which("mcp-server-datahub")
+            return [str(candidate)]
+    found = shutil.which("mcp-server-datahub")
+    return [found] if found else None
 
 
 class DataHubMCP:
@@ -69,7 +82,9 @@ class DataHubMCP:
 
         self._stack = AsyncExitStack()
         read, write = await self._stack.enter_async_context(
-            stdio_client(StdioServerParameters(command=command, args=[], env=env))
+            stdio_client(
+                StdioServerParameters(command=command[0], args=command[1:], env=env)
+            )
         )
         self._session = await self._stack.enter_async_context(ClientSession(read, write))
         await self._session.initialize()

@@ -20,9 +20,55 @@ from __future__ import annotations
 
 import json
 import os
+import random
+import re
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
+
+# Free and low-tier accounts have small tokens-per-minute allowances, and an
+# agent loop resends its whole conversation every turn, so a long investigation
+# will hit them. Retrying is the difference between the project working on a
+# judge's account and appearing broken.
+MAX_RETRIES = int(os.environ.get("CULPRIT_MAX_RETRIES", "6"))
+
+
+def _retry_after_seconds(exc: Exception, attempt: int) -> float:
+    """Prefer the provider's own advice, else exponential backoff with jitter."""
+    match = re.search(r"try again in (\d+(?:\.\d+)?)\s*(ms|s)", str(exc), re.I)
+    if match:
+        value = float(match.group(1))
+        seconds = value / 1000 if match.group(2).lower() == "ms" else value
+        return min(seconds + 0.75, 60.0)
+    return min(2.0**attempt + random.uniform(0, 1), 60.0)
+
+
+def _with_retries(call, label: str = "model call"):
+    """Run `call`, backing off on rate limits and transient server errors."""
+    last: Exception | None = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            return call()
+        except Exception as exc:  # noqa: BLE001 - provider SDKs raise distinct types
+            name = type(exc).__name__
+            retryable = (
+                "RateLimit" in name
+                or "InternalServerError" in name
+                or "APIConnection" in name
+                or "Overloaded" in name
+                or getattr(exc, "status_code", None) in (429, 500, 502, 503, 529)
+            )
+            if not retryable or attempt == MAX_RETRIES - 1:
+                raise
+            delay = _retry_after_seconds(exc, attempt)
+            print(
+                f"  [retry] {label} hit {name}, waiting {delay:.1f}s "
+                f"(attempt {attempt + 1}/{MAX_RETRIES})"
+            )
+            time.sleep(delay)
+            last = exc
+    raise last  # pragma: no cover - loop always returns or raises above
 
 
 @dataclass
@@ -128,12 +174,14 @@ class AnthropicClient(LLMClient):
         )
 
     def step(self) -> LLMResponse:
-        reply = self._client.messages.create(
-            model=self.model,
-            max_tokens=8000,
-            system=self._system,
-            tools=self._tools,
-            messages=self._messages,
+        reply = _with_retries(
+            lambda: self._client.messages.create(
+                model=self.model,
+                max_tokens=8000,
+                system=self._system,
+                tools=self._tools,
+                messages=self._messages,
+            )
         )
         self._messages.append({"role": "assistant", "content": reply.content})
 
@@ -191,11 +239,13 @@ class OpenAIClient(LLMClient):
             )
 
     def step(self) -> LLMResponse:
-        reply = self._client.chat.completions.create(
-            model=self.model,
-            messages=self._messages,
-            tools=self._tools,
-            max_completion_tokens=8000,
+        reply = _with_retries(
+            lambda: self._client.chat.completions.create(
+                model=self.model,
+                messages=self._messages,
+                tools=self._tools,
+                max_completion_tokens=8000,
+            )
         )
         message = reply.choices[0].message
         self._messages.append(

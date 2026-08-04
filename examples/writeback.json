@@ -1,0 +1,7 @@
+{
+  "incident_urn": "urn:li:incident:e4842297-b9ab-4928-acf1-69943bb86cb6",
+  "document": "{\"success\":true,\"urn\":\"urn:li:document:shared-98f4d306-0545-4c4d-b7ca-8292a6995408\",\"message\":\"Successfully created document: Root cause: vendor_id semantic change\",\"author\":\"__datahub_system\"}",
+  "column_annotation": [
+    "{\"success\":true,\"urn\":\"urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)\",\"column_path\":\"vendor_id\",\"message\":\"Description updated successfully\"}"
+  ]
+}

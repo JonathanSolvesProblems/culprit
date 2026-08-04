@@ -120,28 +120,69 @@ def profile_column_over_time(dataset: str, column: str, top_n: int = 12) -> dict
     return out
 
 
-def feature_drift_report(segment_column: str = "vendor_id") -> list[dict[str, Any]]:
+EXCLUDED_FROM_DRIFT = {
+    "pickup_at", "feed_month", "total_amount", "predicted_total", "abs_error",
+    "control_predicted_total", "control_abs_error",
+}
+
+
+def feature_drift_report(segment_column: str = "vendor_id") -> dict[str, Any]:
     """Per-segment behaviour of every model input in the serving table.
 
-    Returns raw statistics only. Deciding which of these constitutes a defect is
-    the agent's job, not this function's.
+    Input names are discovered from the schema rather than written into this
+    query, so the tool carries no knowledge of what the model is about.
+
+    `degenerate_in_segment` lists inputs with zero variance inside a segment.
+    That is the fingerprint of an encoding gap or a collapsed derivation, and it
+    is worth investigating whatever the column happens to mean. Flagging it is
+    not the same as concluding it: deciding whether it is a defect is the
+    agent's job.
     """
     with _con() as con:
-        return con.execute(
+        cols = [
+            r[0]
+            for r in con.execute(f"DESCRIBE SELECT * FROM {PREDICTIONS_TABLE}").fetchall()
+        ]
+        inputs = [c for c in cols if c not in EXCLUDED_FROM_DRIFT and c != segment_column]
+
+        aggregates = ",\n                ".join(
+            f'ROUND(AVG(TRY_CAST("{c}" AS DOUBLE)), 4) AS "avg__{c}", '
+            f'COALESCE(ROUND(STDDEV_POP(TRY_CAST("{c}" AS DOUBLE)), 8), 0) AS "sd__{c}"'
+            for c in inputs
+        )
+        rows = con.execute(
             f"""
-            SELECT
-                "{segment_column}"                       AS segment,
-                COUNT(*)                                 AS trips,
-                ROUND(AVG(trip_distance), 4)             AS avg_trip_distance,
-                ROUND(AVG(trip_minutes), 4)              AS avg_trip_minutes,
-                ROUND(AVG(avg_speed_mph), 4)             AS avg_speed_mph,
-                ROUND(AVG(is_vendor_cmt + is_vendor_curb + is_vendor_myle), 4)
-                                                         AS vendor_onehot_sum,
-                ROUND(AVG(abs_error), 4)                 AS production_mae
+            SELECT "{segment_column}" AS segment,
+                   COUNT(*)                         AS rows,
+                   ROUND(AVG(abs_error), 4)         AS production_mae,
+                   ROUND(AVG(control_abs_error), 4) AS control_mae,
+                   {aggregates}
             FROM {PREDICTIONS_TABLE}
-            GROUP BY 1 ORDER BY trips DESC
+            GROUP BY 1 ORDER BY rows DESC
             """
         ).df().to_dict("records")
+
+    segments = [
+        {
+            "segment": r["segment"],
+            "rows": int(r["rows"]),
+            "production_mae": r["production_mae"],
+            "control_mae": r["control_mae"],
+            "feature_means": {c: r[f"avg__{c}"] for c in inputs},
+            "degenerate_in_segment": [c for c in inputs if (r[f"sd__{c}"] or 0) == 0],
+        }
+        for r in rows
+    ]
+    return {
+        "segment_column": segment_column,
+        "inputs_examined": inputs,
+        "note": (
+            "degenerate_in_segment lists inputs with zero variance within that "
+            "segment. Compare each against the same input in other segments "
+            "before concluding anything."
+        ),
+        "segments": segments,
+    }
 
 
 def measure_attributable_error(

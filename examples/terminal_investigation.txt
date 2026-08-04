@@ -1,0 +1,110 @@
+﻿┌───────────────────────────── Reported symptom ──────────────────────────────┐
+│ Upfront fare quotes have drifted upward against settled fares over recent   │
+│ months. No pipeline has failed, no alert has fired, and the schema has not  │
+│ changed. Nobody knows why.                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+Investigating
+  from datahub.sdk import Document
+[08/04/26 09:57:47] INFO     Starting MCP server 'datahub'     transport.py:241
+                             with transport 'stdio'                            
+
+
+
+) {
+  ) {
+          ...DocumentSearchInfo
+          ...DocumentFacetEntityInfo
+
+DataHub MCP server: 21 tools available
+  [ 1] get_model_context(model_urn=urn:li:mlModel:(urn:li:dataPlatform:duckdb,nyc_fare_predictor,PROD))  68ms
+  [ 2] feature_drift_report(segment_column=vendor_id)  1062ms
+  [thinking] The feature drift report highlighted the following key concerns:  1. Segment behavior with vendor_id as the segment_column:    - **Segment 2** and **Segment 1** are dominated by vendors `curb` and `cmt` respectively, both of which show zero variance in the vendor identifier features: `is_vendor_cmt` ...
+  [ 3] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,trip_minutes))  61ms
+  [ 4] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,avg_speed_mph))  28ms
+  [ 5] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,is_vendor_cmt))  51ms
+  [ 6] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,is_vendor_curb))  38ms
+  [ 7] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,is_vendor_myle))  54ms
+  [ 8] profile_column_over_time(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  449ms
+  [ 9] profile_column_over_time(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  445ms
+  [10] profile_column_over_time(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  164ms
+  [11] profile_column_over_time(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  177ms
+  [thinking] The investigation into upstream lineage and profiling has surfaced critical findings related to the dataset `raw.yellow_trips`:  1. **Feature Lineage**:    - **`trip_minutes`** and **`avg_speed_mph`** are derived from timestamps `pickup_at` and `dropoff_at` which didn’t show any structural anomalies ...
+  [12] measure_attributable_error(segment_value=7)  135ms
+  [thinking] ### Diagnosis Summary  #### Confident Diagnosis **Headline**: Introduction of an unseen vendor (`vendor_id = 7`) starting December 2024 led to corrupted predictions for that segment. - **Root Cause Dataset**: `raw.yellow_trips` - **Root Cause Column**: `vendor_id` - **Change Description**: A new val ...
+  [13] report_root_cause(confident=True, headline=Introduction of an unseen vendor (`vendor_id = 7`) starting Decem ...)  0ms
+┌──────────────────────────────── ROOT CAUSE ─────────────────────────────────┐
+│ Introduction of an unseen vendor (`vendor_id = 7`) starting December 2024   │
+│ led to corrupted predictions for that segment.                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+raw.yellow_trips.vendor_id   <- root cause
+  |
+  +-- nyc_fares.warehouse.main_marts.fct_trip_features
+       |  is_vendor_cmt  corrupted
+       |  is_vendor_curb  corrupted
+       |  is_vendor_myle  corrupted
+       |
+       +-- nyc_fare_predictor v1.4.0
+            trained on: 2024-06,2024-09   <- never saw the new value
+  Dataset            raw.yellow_trips                               
+  Column             vendor_id                                      
+  Affected inputs    is_vendor_cmt, is_vendor_curb, is_vendor_myle  
+┌─────────────────────────────── What changed ────────────────────────────────┐
+│ A new value in `vendor_id` appeared in December 2024, for vendor `7`, which │
+│ was not part of the training data.                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────── Mechanism ─────────────────────────────────┐
+│ The model was trained with vendors `1`, `2`, and `6`. The appearance of     │
+│ vendor `7` led to model misprediction primarily due to encoding mismatches, │
+│ as it lacked respective handling in the feature engineering phase.          │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────── Why every monitor stayed green ───────────────────────┐
+│ Monitoring largely targets structural changes such as schema alterations,   │
+│ null rates, volume, not semantic changes like unseen categorical values.    │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────── Measured impact (SQL, net of control) ───────────────────┐
+│ ┌───────────────────────────────┬───────────────┐                           │
+│ │ metric                        │         value │                           │
+│ ├───────────────────────────────┼───────────────┤                           │
+│ │ affected_rows                 │        66,146 │                           │
+│ │ production_mae                │         4.606 │                           │
+│ │ control_mae                   │        3.1674 │                           │
+│ │ attributable_mae_per_row      │        1.4386 │                           │
+│ │ attributable_dollars          │    $95,158.12 │                           │
+│ │ baseline_control_lift_per_row │        0.0731 │                           │
+│ │ did_attributable_mae_per_row  │        1.3655 │                           │
+│ │ did_attributable_dollars      │    $90,322.36 │                           │
+│ │ gross_amount_exposed          │ $1,698,233.95 │                           │
+│ └───────────────────────────────┴───────────────┘                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────── Recommended fix ──────────────────────────────┐
+│ Update model training data and encoding logic to include vendor `7`. Adjust │
+│ feature engineering steps to anticipate new vendor IDs based on updated     │
+│ vendor datasets or automate retraining upon schema validation alerts.       │
+└─────────────────────────────────────────────────────────────────────────────┘
+Proven from tool output
+  + The appearance and impact of `vendor_id = 7` were measured and confirmed.
+  + Conventional monitors recorded no structural issues but failed to capture 
+the unseen categorical value impact.
+Inferred, not measured
+  ~ The model drift is primarily due to encoding absent for unknown vendor IDs,
+leading to misalignment with expected feature inputs.
+13 tool calls, 6 turns, 36.51s wall clock | gpt-4o | 29,739 in / 1,900 out 
+tokens | ~$0.093
+trace written to 
+C:\Users\Jon_A\OneDrive\Desktop\Projects\Time3\BuildwithDataHub\examples\invest
+igation.json
+Writing findings back to DataHub
+
+
+                entity(urn: $urn) {
+
+            updateDescription(input: $input)
+  incident_urn: urn:li:incident:e4842297-b9ab-4928-acf1-69943bb86cb6
+  document: 
+{"success":true,"urn":"urn:li:document:shared-98f4d306-0545-4c4d-b7ca-8292a6995
+408","message":"Successfully created document: Root cause: vendor_id semantic 
+change","author":"__datahub_system"}
+  column_annotation: 
+['{"success":true,"urn":"urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.ware
+house.raw.yellow_trips,PROD)","column_path":"vendor_id","message":"Description 
+updated successfully"}']

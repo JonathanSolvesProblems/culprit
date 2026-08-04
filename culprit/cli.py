@@ -14,9 +14,14 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+
+# Load .env before anything reads the environment, so a judge can drop their key
+# in a file rather than exporting it.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 from culprit import datahub_graph as dg
 from culprit import trace_view
@@ -95,7 +100,10 @@ def _render(inv: Investigation, animate: bool = False) -> None:
         it.add_column("value", justify="right")
         for key in (
             "affected_rows", "production_mae", "control_mae",
-            "attributable_mae_per_row", "attributable_dollars", "gross_amount_exposed",
+            "attributable_mae_per_row", "attributable_dollars",
+            "baseline_control_lift_per_row",
+            "did_attributable_mae_per_row", "did_attributable_dollars",
+            "gross_amount_exposed",
         ):
             if key in impact:
                 value = impact[key]

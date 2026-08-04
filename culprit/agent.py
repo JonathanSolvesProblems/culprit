@@ -14,6 +14,7 @@ returned by SQL. That is a guardrail on the engine, not a replacement for it.
 from __future__ import annotations
 
 import json
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -24,6 +25,11 @@ from culprit.llm import LLMClient, ToolResult, build_client
 from culprit.mcp_bridge import DataHubMCP
 
 MAX_TURNS = 40
+
+# Tool results are resent every turn, so oversized ones dominate token use and
+# push low-tier accounts over their per-minute limit. 8k characters is ample for
+# the JSON these tools return while keeping a full investigation affordable.
+MAX_TOOL_RESULT_CHARS = int(os.environ.get("CULPRIT_MAX_TOOL_RESULT_CHARS", "8000"))
 
 SYSTEM = """\
 You are Culprit, a diagnostic agent for silent machine-learning model decay.
@@ -45,8 +51,12 @@ Method:
    training data actually contained versus what the model is being asked to
    score now.
 2. Look at how each model input behaves across segments of the serving data.
-   Features that collapse to a constant, or that take impossible values for one
-   segment, are your leads.
+   Inputs that collapse to a constant, or take impossible values for one
+   segment, are your leads. Enumerate ALL of them before moving on, not just the
+   first one you notice. A single upstream change often damages several inputs
+   by different routes, and reporting only one understates the blast radius.
+   Compare the degenerate inputs of the worst segment against a healthy segment:
+   the difference between those two lists is your candidate set.
 3. Walk the lineage backwards from a suspicious feature to the raw source
    columns it derives from. Use the graph, not guesswork.
 4. Profile those source columns over time. You are looking for a change in the
@@ -105,6 +115,8 @@ class Investigation:
     lineage_urns: list[str] = field(default_factory=list)
     model_name: str | None = None
     training_window: str | None = None
+    # Working store for hop deduplication and ordering; not serialised.
+    _hop_depths: list[dict[str, Any]] = field(default_factory=list, repr=False)
 
 
 # --------------------------------------------------------------------------
@@ -342,14 +354,47 @@ def _observe(inv: "Investigation", tool: str, result: Any) -> None:
 
     elif tool == "get_feature_context" and isinstance(result, dict):
         for urn in result.get("source_datasets") or []:
-            if urn not in inv.lineage_urns:
-                inv.lineage_urns.append(urn)
+            _add_hop(inv, urn, depth=0)
 
     elif tool == "get_upstream_lineage" and isinstance(result, list):
         for hop in result:
-            urn = hop.get("dataset") if isinstance(hop, dict) else None
-            if urn and urn not in inv.lineage_urns:
-                inv.lineage_urns.append(urn)
+            if isinstance(hop, dict) and hop.get("dataset"):
+                _add_hop(inv, hop["dataset"], depth=int(hop.get("hop", 0)))
+
+
+def _table_key(urn: str) -> str:
+    """A platform-independent identity for a dataset.
+
+    DataHub's dbt connector creates two datasets per model, one for the dbt node
+    and one for the target-platform table. They are the same table and should
+    appear once in a lineage diagram. Comparing the trailing schema.table
+    segments collapses the pair without needing to know either platform.
+    """
+    try:
+        name = urn.split(",")[1]
+    except IndexError:
+        return urn
+    return ".".join(name.split(".")[-2:])
+
+
+def _add_hop(inv: "Investigation", urn: str, depth: int) -> None:
+    """Record a lineage hop, keeping one entry per real table.
+
+    Hops are stored with their distance from the starting point so the diagram
+    can be drawn in traversal order rather than in the order tools happened to
+    be called.
+    """
+    key = _table_key(urn)
+    for existing in inv._hop_depths:  # noqa: SLF001 - same class
+        if existing["key"] == key:
+            existing["depth"] = max(existing["depth"], depth)
+            return
+    inv._hop_depths.append({"key": key, "urn": urn, "depth": depth})
+
+    # Deepest upstream first: that is the direction the story reads, from the
+    # column that changed down to the model that absorbed it.
+    inv._hop_depths.sort(key=lambda h: -h["depth"])
+    inv.lineage_urns = [h["urn"] for h in inv._hop_depths]
 
 
 def investigate(
@@ -387,6 +432,7 @@ def investigate(
 
     started = time.perf_counter()
     step = 0
+    nudged = False
 
     for turn in range(MAX_TURNS):
         investigation.turns = turn + 1
@@ -397,6 +443,22 @@ def investigate(
                 print(f"\n  [thinking] {_preview(text, 300)}")
 
         if not response.tool_calls:
+            # A model that has finished reasoning will often write its
+            # conclusion as prose instead of calling the reporting tool. That is
+            # a formatting slip, not a failed investigation, so ask once before
+            # giving up rather than discarding the work.
+            if not nudged:
+                nudged = True
+                if verbose:
+                    print("\n  [nudge] asking the model to file its finding as a tool call")
+                client.send_user(
+                    "You stopped without calling report_root_cause. If you have "
+                    "reached a conclusion, call report_root_cause now with your "
+                    "findings, copying any figures verbatim from the tool output "
+                    "you already received. If the evidence does not support a "
+                    "confident diagnosis, call it with confident=false and say why."
+                )
+                continue
             investigation.stopped_reason = "model stopped without reporting"
             break
 
@@ -435,7 +497,9 @@ def investigate(
                 detail = ", ".join(f"{k}={v}" for k, v in list(args.items())[:2])
                 print(f"  [{step:2d}] {name}({_preview(detail, 90)})  {elapsed_ms}ms")
 
-            results.append(ToolResult(id=call.id, content=str(payload)[:20000]))
+            results.append(
+                ToolResult(id=call.id, content=str(payload)[:MAX_TOOL_RESULT_CHARS])
+            )
 
         # Tool results must go back even on the final turn: several providers
         # reject a conversation with an unanswered tool call.

@@ -56,12 +56,20 @@ Attribution is.
 
 ## Model behaviour by vendor, real 2025-06
 
-| vendor | trips | avg_speed_mph feature | vendor one-hot sum | production MAE |
-|---|---:|---:|---:|---:|
-| 2 | 3,022,381 | 11.5909 | 1.0 | $2.6364 |
-| 1 | 817,102 | 11.8951 | 1.0 | $2.8301 |
-| 7 | 66,146 | 0.0 | 0.0 | $4.606 |
-| 6 | 1,395 | 61.9521 | 1.0 | $7.3657 |
+Inputs are discovered from the schema, not named in the query. An input
+with zero variance inside one segment is flagged as degenerate there.
+
+| vendor | trips | production MAE | control MAE | degenerate inputs |
+|---|---:|---:|---:|---|
+| 2 | 3,022,381 | $2.6364 | $2.5613 | `is_vendor_cmt`, `is_vendor_curb`, `is_vendor_myle` |
+| 1 | 817,102 | $2.8301 | $2.7669 | `is_vendor_cmt`, `is_vendor_curb`, `is_vendor_myle` |
+| 7 | 66,146 | $4.606 | $3.1674 | `trip_minutes`, `avg_speed_mph`, `is_vendor_cmt`, `is_vendor_curb`, `is_vendor_myle` |
+| 6 | 1,395 | $7.3657 | $5.9787 | `is_vendor_cmt`, `is_vendor_curb`, `is_vendor_myle` |
+
+Every segment shows its own vendor one-hots as degenerate, which is
+expected: within a single vendor those flags are constant by construction.
+Vendor 7 is the only segment where `trip_minutes` and `avg_speed_mph`
+collapse as well. That difference is the fingerprint.
 
 ## Measured impact on vendor 7
 

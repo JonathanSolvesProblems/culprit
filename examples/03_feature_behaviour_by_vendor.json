@@ -1,38 +1,92 @@
-[
-  {
-    "segment": 2,
-    "trips": 3022381,
-    "avg_trip_distance": 3.6781,
-    "avg_trip_minutes": 17.6718,
-    "avg_speed_mph": 11.5909,
-    "vendor_onehot_sum": 1.0,
-    "production_mae": 2.6364
-  },
-  {
-    "segment": 1,
-    "trips": 817102,
-    "avg_trip_distance": 3.4639,
-    "avg_trip_minutes": 18.1881,
-    "avg_speed_mph": 11.8951,
-    "vendor_onehot_sum": 1.0,
-    "production_mae": 2.8301
-  },
-  {
-    "segment": 7,
-    "trips": 66146,
-    "avg_trip_distance": 2.6746,
-    "avg_trip_minutes": 0.0,
-    "avg_speed_mph": 0.0,
-    "vendor_onehot_sum": 0.0,
-    "production_mae": 4.606
-  },
-  {
-    "segment": 6,
-    "trips": 1395,
-    "avg_trip_distance": 8.8493,
-    "avg_trip_minutes": 35.0801,
-    "avg_speed_mph": 61.9521,
-    "vendor_onehot_sum": 1.0,
-    "production_mae": 7.3657
-  }
-]
+{
+  "segment_column": "vendor_id",
+  "inputs_examined": [
+    "trip_distance",
+    "trip_minutes",
+    "avg_speed_mph",
+    "is_vendor_cmt",
+    "is_vendor_curb",
+    "is_vendor_myle"
+  ],
+  "note": "degenerate_in_segment lists inputs with zero variance within that segment. Compare each against the same input in other segments before concluding anything.",
+  "segments": [
+    {
+      "segment": 2,
+      "rows": 3022381,
+      "production_mae": 2.6364,
+      "control_mae": 2.5613,
+      "feature_means": {
+        "trip_distance": 3.6781,
+        "trip_minutes": 17.6718,
+        "avg_speed_mph": 11.5909,
+        "is_vendor_cmt": 0.0,
+        "is_vendor_curb": 1.0,
+        "is_vendor_myle": 0.0
+      },
+      "degenerate_in_segment": [
+        "is_vendor_cmt",
+        "is_vendor_curb",
+        "is_vendor_myle"
+      ]
+    },
+    {
+      "segment": 1,
+      "rows": 817102,
+      "production_mae": 2.8301,
+      "control_mae": 2.7669,
+      "feature_means": {
+        "trip_distance": 3.4639,
+        "trip_minutes": 18.1881,
+        "avg_speed_mph": 11.8951,
+        "is_vendor_cmt": 1.0,
+        "is_vendor_curb": 0.0,
+        "is_vendor_myle": 0.0
+      },
+      "degenerate_in_segment": [
+        "is_vendor_cmt",
+        "is_vendor_curb",
+        "is_vendor_myle"
+      ]
+    },
+    {
+      "segment": 7,
+      "rows": 66146,
+      "production_mae": 4.606,
+      "control_mae": 3.1674,
+      "feature_means": {
+        "trip_distance": 2.6746,
+        "trip_minutes": 0.0,
+        "avg_speed_mph": 0.0,
+        "is_vendor_cmt": 0.0,
+        "is_vendor_curb": 0.0,
+        "is_vendor_myle": 0.0
+      },
+      "degenerate_in_segment": [
+        "trip_minutes",
+        "avg_speed_mph",
+        "is_vendor_cmt",
+        "is_vendor_curb",
+        "is_vendor_myle"
+      ]
+    },
+    {
+      "segment": 6,
+      "rows": 1395,
+      "production_mae": 7.3657,
+      "control_mae": 5.9787,
+      "feature_means": {
+        "trip_distance": 8.8493,
+        "trip_minutes": 35.0801,
+        "avg_speed_mph": 61.9521,
+        "is_vendor_cmt": 0.0,
+        "is_vendor_curb": 0.0,
+        "is_vendor_myle": 1.0
+      },
+      "degenerate_in_segment": [
+        "is_vendor_cmt",
+        "is_vendor_curb",
+        "is_vendor_myle"
+      ]
+    }
+  ]
+}

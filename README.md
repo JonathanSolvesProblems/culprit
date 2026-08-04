@@ -157,6 +157,41 @@ Nothing about taxis, vendors, or one-hot encoding appears in
 [`culprit/agent.py`](culprit/agent.py). The agent is given tools and a method,
 and it works the problem.
 
+## The recorded run
+
+Not a description of what it should do. This is the run committed in
+[examples/investigation.json](examples/investigation.json), reproducible with
+`culprit replay`:
+
+| | |
+|---|---|
+| model | `gpt-4o` |
+| tool calls | 13 |
+| turns | 6 |
+| wall clock | **36.51 seconds** |
+| tokens | 29,739 in / 1,900 out |
+| cost | **$0.093** |
+| verdict | confident |
+| root cause | `raw.yellow_trips.vendor_id` |
+| affected inputs | `is_vendor_cmt`, `is_vendor_curb`, `is_vendor_myle` |
+
+The agent was given a model URN and one vague sentence ("upfront fare quotes have
+drifted upward, nobody knows why"). It read the model's context, compared feature
+behaviour across segments, pulled five features' lineage, profiled four columns
+over time, measured the impact, and filed the finding. Then it wrote an incident,
+a document and a column annotation back into DataHub, all of which are live on
+the instance.
+
+**Honest note on run-to-run variation.** The upstream change damages the model by
+two separate routes: the unmapped vendor encoding, and the collapse of
+`trip_minutes` / `avg_speed_mph` caused by that vendor's degenerate timestamps.
+Across runs the agent reliably identifies the root cause column and the December
+2024 date, but it has reported one route or the other rather than both. The
+recorded run found the encoding route. An earlier run found the timestamp route
+and is described in [docs/DATAHUB_FINDINGS.md](docs/DATAHUB_FINDINGS.md). Getting
+both reported in a single pass consistently is unfinished work, and it is listed
+in [Limitations](#limitations) rather than papered over.
+
 ## The trace it produces
 
 ```
@@ -389,6 +424,12 @@ Nothing in this repository is simulated.
   only the new-categorical-value path is exercised end to end here.
 - The counterfactual control requires being able to retrain. Where retraining is
   expensive, the naive estimator is the fallback and it overstates.
+- The agent reports one of the two damage routes per run rather than both. It
+  finds the root cause column and the date reliably; enumerating the full blast
+  radius in a single pass is not yet dependable.
+- Low-tier API accounts have small per-minute token allowances and an agent loop
+  resends its context every turn. Culprit retries with backoff, but a very
+  constrained account will still be slow.
 - One model, one warehouse, one feed. This is a demonstration of a traversal that
   generalises, not a product with production hardening.
 

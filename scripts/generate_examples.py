@@ -150,14 +150,25 @@ def main() -> None:
         "",
         "## Model behaviour by vendor, real 2025-06",
         "",
-        "| vendor | trips | avg_speed_mph feature | vendor one-hot sum | production MAE |",
-        "|---|---:|---:|---:|---:|",
+        "Inputs are discovered from the schema, not named in the query. An input",
+        "with zero variance inside one segment is flagged as degenerate there.",
+        "",
+        "| vendor | trips | production MAE | control MAE | degenerate inputs |",
+        "|---|---:|---:|---:|---|",
     ]
-    for r in drift:
+    for r in drift["segments"]:
+        degenerate = ", ".join(f"`{c}`" for c in r["degenerate_in_segment"]) or "none"
         lines.append(
-            f"| {r['segment']} | {r['trips']:,} | {r['avg_speed_mph']} | "
-            f"{r['vendor_onehot_sum']} | ${r['production_mae']} |"
+            f"| {r['segment']} | {r['rows']:,} | ${r['production_mae']} "
+            f"| ${r['control_mae']} | {degenerate} |"
         )
+    lines += [
+        "",
+        "Every segment shows its own vendor one-hots as degenerate, which is",
+        "expected: within a single vendor those flags are constant by construction.",
+        "Vendor 7 is the only segment where `trip_minutes` and `avg_speed_mph`",
+        "collapse as well. That difference is the fingerprint.",
+    ]
 
     lines += [
         "",

@@ -1,0 +1,29 @@
+{
+  "note": "Produced by DataHub's native dbt connector parsing real manifest.json and catalog.json, not asserted by Culprit. Dumped here without running the agent so the lineage can be inspected on its own.",
+  "upstream_of_feature_table": [
+    {
+      "hop": 0,
+      "dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)",
+      "name": "fct_trip_features",
+      "upstreams": [
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_staging.stg_yellow_trips,PROD)"
+      ]
+    },
+    {
+      "hop": 1,
+      "dataset": "urn:li:dataset:(urn:li:dataPlatform:duckdb,warehouse.main_staging.stg_yellow_trips,PROD)",
+      "name": "warehouse.main_staging.stg_yellow_trips",
+      "upstreams": [
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_staging.stg_yellow_trips,PROD)"
+      ]
+    },
+    {
+      "hop": 2,
+      "dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_staging.stg_yellow_trips,PROD)",
+      "name": "stg_yellow_trips",
+      "upstreams": [
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)"
+      ]
+    }
+  ]
+}

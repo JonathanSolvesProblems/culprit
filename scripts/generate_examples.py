@@ -70,7 +70,30 @@ def main() -> None:
     except Exception as exc:  # noqa: BLE001
         print(f"  skipped ML lineage export (DataHub not reachable): {exc}")
 
-    # 7. A human-readable summary table.
+    # 7. The dataset lineage DataHub's own dbt connector produced, dumped
+    #    independently of any agent run. Evidence that the graph Culprit walks
+    #    is ingested build output, not something this project asserted.
+    try:
+        features_ds = (
+            "urn:li:dataset:(urn:li:dataPlatform:dbt,"
+            "nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
+        )
+        write_json(
+            "07_dbt_ingested_lineage.json",
+            {
+                "note": (
+                    "Produced by DataHub's native dbt connector parsing real "
+                    "manifest.json and catalog.json, not asserted by Culprit. "
+                    "Dumped here without running the agent so the lineage can be "
+                    "inspected on its own."
+                ),
+                "upstream_of_feature_table": dg.get_upstream_lineage(features_ds, depth=3),
+            },
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"  skipped lineage export (DataHub not reachable): {exc}")
+
+    # 8. A human-readable summary table.
     lines = [
         "# Culprit: measured results",
         "",

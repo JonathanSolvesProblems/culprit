@@ -33,10 +33,12 @@ select
     pu_location_id,
     do_location_id,
 
-    -- vendor encoding: exhaustive over vendors known at authoring time
+    -- vendor encoding: exhaustive over vendors known at authoring time,
+    -- and using a fallback for unknown vendors
     case when vendor_id = 1 then 1 else 0 end                   as is_vendor_cmt,
     case when vendor_id = 2 then 1 else 0 end                   as is_vendor_curb,
     case when vendor_id = 6 then 1 else 0 end                   as is_vendor_myle,
+    case when vendor_id not in (1, 2, 6) then 1 else 0 end      as is_vendor_unknown,  -- Add a feature to capture unknown vendors
 
     -- fare context
     case when ratecode_id in (2, 3) then 1 else 0 end           as is_airport_rate,

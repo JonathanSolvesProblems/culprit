@@ -166,31 +166,77 @@ Not a description of what it should do. This is the run committed in
 | | |
 |---|---|
 | model | `gpt-4o` |
-| tool calls | 13 |
-| turns | 6 |
-| wall clock | **36.51 seconds** |
-| tokens | 29,739 in / 1,900 out |
-| cost | **$0.093** |
+| tool calls | 12 |
+| turns | 11 |
+| wall clock | **85.12 seconds** |
+| tokens | 66,359 in / 1,757 out |
+| cost | **$0.183** |
 | verdict | confident |
 | root cause | `raw.yellow_trips.vendor_id` |
-| affected inputs | `is_vendor_cmt`, `is_vendor_curb`, `is_vendor_myle` |
+| affected inputs | `trip_minutes`, `avg_speed_mph`, `is_vendor_cmt`, `is_vendor_curb`, `is_vendor_myle` |
 
 The agent was given a model URN and one vague sentence ("upfront fare quotes have
-drifted upward, nobody knows why"). It read the model's context, compared feature
-behaviour across segments, pulled five features' lineage, profiled four columns
-over time, measured the impact, and filed the finding. Then it wrote an incident,
-a document and a column annotation back into DataHub, all of which are live on
-the instance.
+drifted upward, nobody knows why"). It read the model's context, compared input
+behaviour across segments, walked feature lineage, profiled columns over time,
+measured the impact, and filed the finding. Then it wrote an incident, a document
+and a column annotation back into DataHub, all live on the instance.
 
-**Honest note on run-to-run variation.** The upstream change damages the model by
-two separate routes: the unmapped vendor encoding, and the collapse of
-`trip_minutes` / `avg_speed_mph` caused by that vendor's degenerate timestamps.
-Across runs the agent reliably identifies the root cause column and the December
-2024 date, but it has reported one route or the other rather than both. The
-recorded run found the encoding route. An earlier run found the timestamp route
-and is described in [docs/DATAHUB_FINDINGS.md](docs/DATAHUB_FINDINGS.md). Getting
-both reported in a single pass consistently is unfinished work, and it is listed
-in [Limitations](#limitations) rather than papered over.
+Note the affected-input list: the upstream change damages the model by **two
+independent routes**, and both are reported.
+
+- The unmapped vendor encoding, so those rows activate no category at all
+  (`is_vendor_*`).
+- The collapse of `trip_minutes` and `avg_speed_mph`, because that vendor
+  reports identical pickup and dropoff timestamps.
+
+Getting both in one pass took work. Early runs found one route or the other and
+sometimes named `pickup_at` as the root cause, which is a symptom: those
+timestamps are degenerate *because of which rows they are*. Two general
+principles fixed it, neither of which names anything about this dataset:
+encoding-completeness is a separate signal from value-collapse and both must be
+accounted for, and when several columns look anomalous the one that **defines
+the affected segment** is upstream of the rest.
+
+## Closing the loop: the generated fix
+
+`culprit fix` locates the transformation at fault, writes a patch, and then
+**proves it by running dbt against the real warehouse** before proposing
+anything. Three gates must pass:
+
+1. `dbt build` succeeds on the patched model
+2. the affected rows now match a category
+3. no other segment's row count changed
+
+Only then does it open a PR. Sample artifacts:
+[examples/generated_fix.sql](examples/generated_fix.sql),
+[examples/remediation.json](examples/remediation.json).
+
+**This is not decoration, and the first attempt failed gate 2 and 3.** The model
+proposed:
+
+```sql
++ where vendor_id in (1, 2, 6)
+```
+
+That does not encode the new vendor. It **deletes all 66,146 of its trips**. It
+compiles cleanly and `dbt build` passes, so any check based on "does the patch
+look reasonable" would have shipped it, and the symptom would have vanished along
+with the data. The row-count gate caught it and refused the PR.
+
+After tightening the constraint to forbid changing the row population, the
+accepted patch was better than the obvious hand-written fix:
+
+```sql
++ case when vendor_id not in (1, 2, 6) then 1 else 0 end as is_vendor_unknown,
+```
+
+A catch-all bucket rather than a special case for vendor 7, so it does not break
+again when vendor 8 appears. Mean active category indicators for the affected
+segment went from **0.0 to 1.0**.
+
+The PR body states plainly that correcting the transformation stops new rows
+being mis-encoded but does **not** repair the deployed model, which never trained
+on this value. That still needs a retrain.
 
 ## The trace it produces
 
@@ -424,12 +470,15 @@ Nothing in this repository is simulated.
   only the new-categorical-value path is exercised end to end here.
 - The counterfactual control requires being able to retrain. Where retraining is
   expensive, the naive estimator is the fallback and it overstates.
-- The agent reports one of the two damage routes per run rather than both. It
-  finds the root cause column and the date reliably; enumerating the full blast
-  radius in a single pass is not yet dependable.
 - Low-tier API accounts have small per-minute token allowances and an agent loop
   resends its context every turn. Culprit retries with backoff, but a very
   constrained account will still be slow.
+- The generated fix repairs the transformation. It does not retrain the model,
+  so the measured error persists until someone does. Culprit says so in the PR
+  rather than implying the problem is solved.
+- Remediation is verified against a dbt project on a local warehouse. The gates
+  generalise, but a team with a slow or expensive build will not want a full
+  `dbt build` inside the loop.
 - One model, one warehouse, one feed. This is a demonstration of a traversal that
   generalises, not a product with production hardening.
 

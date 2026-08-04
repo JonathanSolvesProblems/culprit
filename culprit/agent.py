@@ -51,14 +51,33 @@ Method:
    training data actually contained versus what the model is being asked to
    score now.
 2. Look at how each model input behaves across segments of the serving data.
-   Inputs that collapse to a constant, or take impossible values for one
-   segment, are your leads. Enumerate ALL of them before moving on, not just the
-   first one you notice. A single upstream change often damages several inputs
-   by different routes, and reporting only one understates the blast radius.
-   Compare the degenerate inputs of the worst segment against a healthy segment:
-   the difference between those two lists is your candidate set.
+   A single upstream change frequently damages a model by MORE THAN ONE route
+   at once, and reporting only the first route you find understates the blast
+   radius and produces an incomplete fix.
+
+   Treat every signal the drift report raises as a separate finding to account
+   for. Two independent things it can tell you about the same segment:
+     - inputs degenerate only in that segment, meaning a derivation collapsed
+     - every category indicator sitting at zero, meaning those rows match no
+       category the transformation knows about
+   These have different causes and different fixes. If both fire on the same
+   segment, both belong in affected_features and both belong in the mechanism.
+   Before you report, check your affected_features list against every signal
+   that fired and confirm nothing is missing.
 3. Walk the lineage backwards from a suspicious feature to the raw source
    columns it derives from. Use the graph, not guesswork.
+
+   Several source columns will often look anomalous at once. Rank them by
+   causal precedence rather than picking whichever you profiled first:
+
+   - If the damage is confined to one segment, the column that DEFINES that
+     segment is upstream of everything else anomalous within it. Other columns
+     look strange *for those rows* precisely because of which rows they are.
+     The defining column is the root cause; the rest are its symptoms.
+   - Prefer the column whose change is a genuine change in the incoming data
+     over a column that merely computes differently for the affected rows.
+   - Sanity check: the root cause should explain every other anomaly you found.
+     If it explains only some, you have picked a symptom.
 4. Profile those source columns over time. You are looking for a change in the
    set of values, not a change in volume or shape.
 5. Form a hypothesis that explains the mechanism end to end: source change ->

@@ -210,6 +210,110 @@ def cmd_replay(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_fix(args: argparse.Namespace) -> int:
+    """Generate, prove and optionally propose the repair for a recorded finding."""
+    from culprit import remediate as rem
+    from culprit import warehouse as wh
+    from culprit.llm import build_client
+
+    path = EXAMPLES / "investigation.json"
+    if not path.exists():
+        console.print(Panel("No recorded investigation. Run `investigate` first.",
+                            title="Nothing to fix", border_style="red"))
+        return 1
+    payload = json.loads(path.read_text())
+    rc = payload.get("root_cause") or {}
+    if not rc:
+        console.print(Panel("The recorded run reported no root cause.",
+                            title="Nothing to fix", border_style="red"))
+        return 1
+
+    column = rc.get("root_cause_column")
+    profile = wh.profile_column_over_time(rc.get("root_cause_dataset", ""), column)
+    unmapped = [n["value"] for n in profile.get("new_values_appeared", [])]
+    impact = wh.measure_attributable_error(column, _coerce(unmapped[0]) if unmapped else None)
+    evidence = (
+        f"{impact['affected_rows']:,} affected rows, "
+        f"${impact['did_attributable_dollars']:,.2f} attributable error "
+        f"(difference-in-differences)."
+    )
+
+    console.print(Panel(
+        f"Root cause column: [bold]{column}[/bold]\n"
+        f"Unmapped value(s): [bold]{', '.join(unmapped) or 'none found'}[/bold]\n"
+        f"{evidence}",
+        title="Repairing", border_style="cyan"))
+
+    result = rem.remediate(
+        client=build_client(), root_cause=rc, unmapped_values=unmapped,
+        evidence=evidence, segment_column=column,
+        segment_value=_coerce(unmapped[0]) if unmapped else None,
+        create_pr=args.open_pr,
+    )
+
+    if result.error:
+        console.print(Panel(result.error, title="Could not repair", border_style="red"))
+        return 1
+
+    console.print(f"\n[bold]Transformation:[/bold] {result.transformation_path}")
+    console.print(Panel(result.diff or "(no diff)", title="Generated patch",
+                        border_style="cyan"))
+
+    g = result.gates
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("gate")
+    table.add_column("result")
+    for label, key in (
+        ("dbt build succeeds", "dbt_build_ok"),
+        ("affected rows now match a category", "defect_resolved"),
+        ("no other segment's row count changed", "row_counts_unchanged"),
+    ):
+        ok = g.get(key)
+        table.add_row(label, "[green]PASS[/green]" if ok else "[red]FAIL[/red]")
+    console.print(Panel(table, title="Verification (dbt run against the real warehouse)",
+                        border_style="green" if result.validated else "red"))
+
+    before, after = g.get("before", {}), g.get("after", {})
+    if before or after:
+        console.print(
+            f"  mean active category indicators for the affected segment: "
+            f"[red]{before.get('mean_active_indicators')}[/red] -> "
+            f"[green]{after.get('mean_active_indicators')}[/green]"
+        )
+    if not g.get("dbt_build_ok"):
+        console.print(Panel(g.get("dbt_output_tail", ""), title="dbt output",
+                            border_style="red"))
+
+    if result.pull_request_url:
+        console.print(f"\n[bold green]Pull request:[/bold green] {result.pull_request_url}")
+    elif args.open_pr:
+        console.print("\n[yellow]PR not opened (see above).[/yellow]")
+    else:
+        console.print("\n[dim]Re-run with --open-pr to propose this as a pull request.[/dim]")
+
+    EXAMPLES.mkdir(exist_ok=True)
+    (EXAMPLES / "remediation.json").write_text(json.dumps({
+        "transformation": str(result.transformation_path),
+        "diff": result.diff,
+        "validated": result.validated,
+        "gates": g,
+        "branch": result.branch,
+        "pull_request_url": result.pull_request_url,
+    }, indent=2, default=str))
+    (EXAMPLES / "generated_fix.sql").write_text(result.patched_sql)
+    console.print(f"[dim]artifacts written to {EXAMPLES}[/dim]")
+    return 0 if result.validated else 1
+
+
+def _coerce(value: str | None):
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return value
+
+
 def cmd_investigate(args: argparse.Namespace) -> int:
     console.print(Panel(args.symptom, title="Reported symptom", border_style="yellow"))
     console.print("\n[bold]Investigating[/bold]\n")
@@ -276,6 +380,17 @@ def main() -> int:
         "--animate", action="store_true", help="Reveal the trace step by step"
     )
     rep.set_defaults(func=cmd_replay)
+
+    fix = sub.add_parser(
+        "fix",
+        help="Generate the repair for the recorded finding, prove it with dbt, "
+             "and optionally open a PR",
+    )
+    fix.add_argument(
+        "--open-pr", action="store_true",
+        help="Open a pull request. Only happens if every verification gate passes.",
+    )
+    fix.set_defaults(func=cmd_fix)
 
     inv = sub.add_parser("investigate", help="Diagnose a degraded model")
     inv.add_argument("--model-urn", default=DEFAULT_MODEL_URN)

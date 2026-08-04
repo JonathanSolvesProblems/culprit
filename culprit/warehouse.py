@@ -162,6 +162,18 @@ def feature_drift_report(segment_column: str = "vendor_id") -> dict[str, Any]:
             """
         ).df().to_dict("records")
 
+    # Which inputs look like category indicators, i.e. take only 0 or 1 across
+    # the whole table. Determined from the data, not from column names.
+    with _con() as con:
+        indicators = []
+        for c in inputs:
+            distinct = con.execute(
+                f'SELECT DISTINCT TRY_CAST("{c}" AS DOUBLE) v FROM {PREDICTIONS_TABLE} '
+                f'WHERE "{c}" IS NOT NULL'
+            ).df()["v"].dropna().tolist()
+            if distinct and set(distinct) <= {0.0, 1.0}:
+                indicators.append(c)
+
     segments = [
         {
             "segment": r["segment"],
@@ -173,13 +185,39 @@ def feature_drift_report(segment_column: str = "vendor_id") -> dict[str, Any]:
         }
         for r in rows
     ]
+
+    # The largest segment is the reference for "normal". An input that is
+    # degenerate everywhere (a category indicator inside its own category, say)
+    # is uninteresting; one that is degenerate ONLY here is a lead.
+    reference = max(segments, key=lambda s: s["rows"]) if segments else None
+    ref_degenerate = set(reference["degenerate_in_segment"]) if reference else set()
+
+    for s in segments:
+        s["degenerate_only_in_this_segment"] = sorted(
+            set(s["degenerate_in_segment"]) - ref_degenerate
+        )
+        # Encoding completeness: if every category indicator is 0, these rows
+        # match no category the encoder knows about. That is the signature of a
+        # value appearing upstream that the transformation was never taught.
+        s["indicator_inputs"] = indicators
+        s["all_indicators_zero"] = bool(
+            indicators and all((s["feature_means"].get(c) or 0) == 0 for c in indicators)
+        )
+
     return {
         "segment_column": segment_column,
         "inputs_examined": inputs,
+        "reference_segment": reference["segment"] if reference else None,
         "note": (
-            "degenerate_in_segment lists inputs with zero variance within that "
-            "segment. Compare each against the same input in other segments "
-            "before concluding anything."
+            "Three signals, all computed from the data:\n"
+            "  degenerate_in_segment: inputs with zero variance inside the segment.\n"
+            "  degenerate_only_in_this_segment: the same, minus whatever is also "
+            "degenerate in the largest segment. These are the real leads.\n"
+            "  all_indicators_zero: every 0/1 category indicator is 0 for this "
+            "segment, meaning these rows match no category the encoder knows. "
+            "That is a distinct defect from a collapsed value, and a segment can "
+            "have BOTH at once. Account for every signal that fires, not the "
+            "first one you notice."
         ),
         "segments": segments,
     }

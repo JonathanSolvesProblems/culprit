@@ -1,0 +1,49 @@
+{
+  "transformation": "C:\\Users\\Jon_A\\OneDrive\\Desktop\\Projects\\Time3\\BuildwithDataHub\\pipeline\\dbt\\models\\marts\\fct_trip_features.sql",
+  "diff": "--- a/pipeline/dbt/models/marts/fct_trip_features.sql\n+++ b/pipeline/dbt/models/marts/fct_trip_features.sql\n@@ -33,10 +33,12 @@\n     pu_location_id,\n     do_location_id,\n \n-    -- vendor encoding: exhaustive over vendors known at authoring time\n+    -- vendor encoding: exhaustive over vendors known at authoring time,\n+    -- and using a fallback for unknown vendors\n     case when vendor_id = 1 then 1 else 0 end                   as is_vendor_cmt,\n     case when vendor_id = 2 then 1 else 0 end                   as is_vendor_curb,\n     case when vendor_id = 6 then 1 else 0 end                   as is_vendor_myle,\n+    case when vendor_id not in (1, 2, 6) then 1 else 0 end      as is_vendor_unknown,  -- Add a feature to capture unknown vendors\n \n     -- fare context\n     case when ratecode_id in (2, 3) then 1 else 0 end           as is_airport_rate,\n",
+  "validated": true,
+  "gates": {
+    "before": {
+      "indicators": [
+        "is_vendor_cmt",
+        "is_vendor_curb",
+        "is_vendor_myle"
+      ],
+      "mean_active_indicators": 0.0,
+      "rows": 87693,
+      "all_zero": true
+    },
+    "dbt_build_ok": true,
+    "dbt_output_tail": "14:46:18  Found 2 models, 1 source, 486 macros\n14:46:18  \n14:46:18  Concurrency: 4 threads (target='dev')\n14:46:18  \n14:46:18  1 of 1 START sql table model main_marts.fct_trip_features ...................... [RUN]\n14:46:25  1 of 1 OK created sql table model main_marts.fct_trip_features ................. [OK in 7.22s]\n14:46:25  \n14:46:25  Finished running 1 table model in 0 hours 0 minutes and 7.36 seconds (7.36s).\n14:46:25  \n14:46:25  Completed successfully\n14:46:25  \n14:46:25  Done. PASS=1 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=1",
+    "after": {
+      "indicators": [
+        "is_vendor_cmt",
+        "is_vendor_curb",
+        "is_vendor_myle",
+        "is_vendor_unknown"
+      ],
+      "mean_active_indicators": 1.0,
+      "rows": 87693,
+      "all_zero": false
+    },
+    "defect_resolved": true,
+    "row_counts_unchanged": true,
+    "row_counts": {
+      "before": {
+        "1": 4075707,
+        "2": 13953170,
+        "6": 2169,
+        "7": 87693
+      },
+      "after": {
+        "1": 4075707,
+        "2": 13953170,
+        "6": 2169,
+        "7": 87693
+      }
+    },
+    "passed": true
+  },
+  "branch": "culprit/fix-vendor-id",
+  "pull_request_url": "https://github.com/JonathanSolvesProblems/culprit/pull/1"
+}

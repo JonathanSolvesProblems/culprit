@@ -3,17 +3,19 @@
   "symptom": "Upfront fare quotes have drifted upward against settled fares over recent months. No pipeline has failed, no alert has fired, and the schema has not changed. Nobody knows why.",
   "root_cause": {
     "confident": true,
-    "headline": "Introduction of an unseen vendor (`vendor_id = 7`) starting December 2024 led to corrupted predictions for that segment.",
-    "root_cause_dataset": "raw.yellow_trips",
+    "headline": "Introduction of unrecognized vendor_id (7) into real-time data not seen in training data.",
+    "root_cause_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)",
     "root_cause_column": "vendor_id",
-    "change_description": "A new value in `vendor_id` appeared in December 2024, for vendor `7`, which was not part of the training data.",
-    "mechanism": "The model was trained with vendors `1`, `2`, and `6`. The appearance of vendor `7` led to model misprediction primarily due to encoding mismatches, as it lacked respective handling in the feature engineering phase.",
+    "change_description": "A new vendor (7) began appearing in the data as of December 2024, introducing semantic drift due to the absence of this category in the model's training phase.",
+    "mechanism": "Vendor 7 inflates drift in trip_minutes and avg_speed_mph calculations due to missing category handling in is_vendor_myle derived feature, leading to upstream impact on revenue predictions.",
     "affected_features": [
+      "trip_minutes",
+      "avg_speed_mph",
       "is_vendor_cmt",
       "is_vendor_curb",
       "is_vendor_myle"
     ],
-    "why_monitors_missed_it": "Monitoring largely targets structural changes such as schema alterations, null rates, volume, not semantic changes like unseen categorical values.",
+    "why_monitors_missed_it": "All standard structural monitors (freshness, volume, nulls, schema) were silent as they don't track semantic changes. However, a unique count monitor did flag the appearance of a new category.",
     "impact": {
       "affected_rows": 66146,
       "production_mae": 4.606,
@@ -31,22 +33,24 @@
       "did_attributable_dollars": 90322.36,
       "estimator_note": "did_* nets out the control model's advantage from having more and fresher training data, measured on segments with no encoding defect. Report did_attributable_dollars as the headline; it is the stricter of the two estimates."
     },
-    "recommended_fix": "Update model training data and encoding logic to include vendor `7`. Adjust feature engineering steps to anticipate new vendor IDs based on updated vendor datasets or automate retraining upon schema validation alerts.",
+    "recommended_fix": "Update model training pipeline to incorporate all active vendor_ids, including 7, and retrain the model.",
     "proven": [
-      "The appearance and impact of `vendor_id = 7` were measured and confirmed.",
-      "Conventional monitors recorded no structural issues but failed to capture the unseen categorical value impact."
+      "Segment 7 shows degenerate trip_minutes and avg_speed_mph with both metrics being zero consistently (Feature Drift Report).",
+      "trip_minutes derived from pickup_at and dropoff_at timestamps (Feature Context).",
+      "Anomalous increase in distinct values in March 2025 for both pickup_at and dropoff_at (Profile Over Time).",
+      "Profile of vendor_id shows the appearance of a new type in December 2024."
     ],
     "inferred": [
-      "The model drift is primarily due to encoding absent for unknown vendor IDs, leading to misalignment with expected feature inputs."
+      "Vendor changes can introduce undisclosed categories leading to drift, reasoned through drift patterns and categorical shifts."
     ]
   },
-  "elapsed_seconds": 36.51,
-  "turns": 6,
-  "tool_calls": 13,
+  "elapsed_seconds": 85.12,
+  "turns": 11,
+  "tool_calls": 12,
   "llm_model": "gpt-4o",
-  "input_tokens": 29739,
-  "output_tokens": 1900,
-  "estimated_cost_usd": 0.09334750000000001,
+  "input_tokens": 66359,
+  "output_tokens": 1757,
+  "estimated_cost_usd": 0.1834675,
   "lineage_urns": [
     "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)"
   ],
@@ -59,7 +63,7 @@
       "arguments": {
         "model_urn": "urn:li:mlModel:(urn:li:dataPlatform:duckdb,nyc_fare_predictor,PROD)"
       },
-      "elapsed_ms": 68,
+      "elapsed_ms": 100,
       "result_preview": "{\"urn\": \"urn:li:mlModel:(urn:li:dataPlatform:duckdb,nyc_fare_predictor,PROD)\", \"name\": \"nyc_fare_predictor\", \"description\": \"Predicts total_amount for a yellow-taxi trip. Serves upfront fare quotes. Retrained quarterly.\", \"version\": \"1.4.0\", \"algorithm\": \"sklearn.HistGradientBoostingRegressor\", \"features\": [\"urn:li:mlFeature:(nyc_fare_features,trip_distance)\", \"urn:li:mlFeature:(nyc_fare_features, ..."
     },
     {
@@ -68,8 +72,8 @@
       "arguments": {
         "segment_column": "vendor_id"
       },
-      "elapsed_ms": 1062,
-      "result_preview": "{\"segment_column\": \"vendor_id\", \"inputs_examined\": [\"trip_distance\", \"trip_minutes\", \"avg_speed_mph\", \"is_vendor_cmt\", \"is_vendor_curb\", \"is_vendor_myle\"], \"note\": \"degenerate_in_segment lists inputs with zero variance within that segment. Compare each against the same input in other segments before concluding anything.\", \"segments\": [{\"segment\": 2, \"rows\": 3022381, \"production_mae\": 2.6364, \"cont ..."
+      "elapsed_ms": 1326,
+      "result_preview": "{\"segment_column\": \"vendor_id\", \"inputs_examined\": [\"trip_distance\", \"trip_minutes\", \"avg_speed_mph\", \"is_vendor_cmt\", \"is_vendor_curb\", \"is_vendor_myle\"], \"reference_segment\": 2, \"note\": \"Three signals, all computed from the data:\\n  degenerate_in_segment: inputs with zero variance inside the segment.\\n  degenerate_only_in_this_segment: the same, minus whatever is also degenerate in the largest s ..."
     },
     {
       "index": 3,
@@ -77,7 +81,7 @@
       "arguments": {
         "feature_urn": "urn:li:mlFeature:(nyc_fare_features,trip_minutes)"
       },
-      "elapsed_ms": 61,
+      "elapsed_ms": 38,
       "result_preview": "{\"urn\": \"urn:li:mlFeature:(nyc_fare_features,trip_minutes)\", \"name\": \"trip_minutes\", \"description\": \"Trip duration derived from pickup and dropoff timestamps.\", \"data_type\": \"CONTINUOUS\", \"source_datasets\": [\"urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)\"], \"source_column\": \"trip_minutes\", \"root_columns\": [\"pickup_at\", \"dropoff_at\"], \"root_dataset\": ..."
     },
     {
@@ -86,101 +90,95 @@
       "arguments": {
         "feature_urn": "urn:li:mlFeature:(nyc_fare_features,avg_speed_mph)"
       },
-      "elapsed_ms": 28,
+      "elapsed_ms": 40,
       "result_preview": "{\"urn\": \"urn:li:mlFeature:(nyc_fare_features,avg_speed_mph)\", \"name\": \"avg_speed_mph\", \"description\": \"Average speed. Coalesced to 0 when duration is zero.\", \"data_type\": \"CONTINUOUS\", \"source_datasets\": [\"urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)\"], \"source_column\": \"avg_speed_mph\", \"root_columns\": [\"trip_distance\", \"pickup_at\", \"dropoff_at\"],  ..."
     },
     {
       "index": 5,
-      "tool": "get_feature_context",
-      "arguments": {
-        "feature_urn": "urn:li:mlFeature:(nyc_fare_features,is_vendor_cmt)"
-      },
-      "elapsed_ms": 51,
-      "result_preview": "{\"urn\": \"urn:li:mlFeature:(nyc_fare_features,is_vendor_cmt)\", \"name\": \"is_vendor_cmt\", \"description\": \"Trip supplied by vendor 1 (Creative Mobile Technologies).\", \"data_type\": \"BINARY\", \"source_datasets\": [\"urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)\"], \"source_column\": \"is_vendor_cmt\", \"root_columns\": [\"vendor_id\"], \"root_dataset\": \"urn:li:datase ..."
-    },
-    {
-      "index": 6,
-      "tool": "get_feature_context",
-      "arguments": {
-        "feature_urn": "urn:li:mlFeature:(nyc_fare_features,is_vendor_curb)"
-      },
-      "elapsed_ms": 38,
-      "result_preview": "{\"urn\": \"urn:li:mlFeature:(nyc_fare_features,is_vendor_curb)\", \"name\": \"is_vendor_curb\", \"description\": \"Trip supplied by vendor 2 (Curb / VeriFone).\", \"data_type\": \"BINARY\", \"source_datasets\": [\"urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)\"], \"source_column\": \"is_vendor_curb\", \"root_columns\": [\"vendor_id\"], \"root_dataset\": \"urn:li:dataset:(urn:li: ..."
-    },
-    {
-      "index": 7,
-      "tool": "get_feature_context",
-      "arguments": {
-        "feature_urn": "urn:li:mlFeature:(nyc_fare_features,is_vendor_myle)"
-      },
-      "elapsed_ms": 54,
-      "result_preview": "{\"urn\": \"urn:li:mlFeature:(nyc_fare_features,is_vendor_myle)\", \"name\": \"is_vendor_myle\", \"description\": \"Trip supplied by vendor 6 (Myle).\", \"data_type\": \"BINARY\", \"source_datasets\": [\"urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)\"], \"source_column\": \"is_vendor_myle\", \"root_columns\": [\"vendor_id\"], \"root_dataset\": \"urn:li:dataset:(urn:li:dataPlatfor ..."
-    },
-    {
-      "index": 8,
       "tool": "profile_column_over_time",
       "arguments": {
         "dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)",
         "column": "pickup_at"
       },
-      "elapsed_ms": 449,
+      "elapsed_ms": 352,
       "result_preview": "{\"dataset\": \"raw.yellow_trips\", \"column\": \"pickup_at\", \"is_categorical\": false, \"per_month\": [{\"feed_month\": \"2024-06\", \"distinct_values\": 1696120, \"rows\": 3539193, \"null_pct\": 0.0}, {\"feed_month\": \"2024-09\", \"distinct_values\": 1703158, \"rows\": 3633030, \"null_pct\": 0.0}, {\"feed_month\": \"2024-12\", \"distinct_values\": 1705532, \"rows\": 3668371, \"null_pct\": 0.0}, {\"feed_month\": \"2025-03\", \"distinct_val ..."
     },
     {
-      "index": 9,
+      "index": 6,
       "tool": "profile_column_over_time",
       "arguments": {
         "dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)",
         "column": "dropoff_at"
       },
-      "elapsed_ms": 445,
+      "elapsed_ms": 346,
       "result_preview": "{\"dataset\": \"raw.yellow_trips\", \"column\": \"dropoff_at\", \"is_categorical\": false, \"per_month\": [{\"feed_month\": \"2024-06\", \"distinct_values\": 1695919, \"rows\": 3539193, \"null_pct\": 0.0}, {\"feed_month\": \"2024-09\", \"distinct_values\": 1700910, \"rows\": 3633030, \"null_pct\": 0.0}, {\"feed_month\": \"2024-12\", \"distinct_values\": 1703783, \"rows\": 3668371, \"null_pct\": 0.0}, {\"feed_month\": \"2025-03\", \"distinct_va ..."
+    },
+    {
+      "index": 7,
+      "tool": "measure_attributable_error",
+      "arguments": {
+        "segment_value": 7
+      },
+      "elapsed_ms": 61,
+      "result_preview": "{\"affected_rows\": 66146, \"production_mae\": 4.606, \"control_mae\": 3.1674, \"attributable_mae_per_row\": 1.4386, \"attributable_dollars\": 95158.12, \"gross_amount_exposed\": 1698233.95, \"first_affected_at\": \"2025-06-01 00:00:07\", \"last_affected_at\": \"2025-06-30 23:59:17\", \"segment_column\": \"vendor_id\", \"segment_value\": 7, \"baseline_rows\": 3840878, \"baseline_control_lift_per_row\": 0.0731, \"did_attributabl ..."
+    },
+    {
+      "index": 8,
+      "tool": "check_standard_monitors",
+      "arguments": {
+        "dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)",
+        "column": "pickup_at"
+      },
+      "elapsed_ms": 309,
+      "result_preview": "{\"dataset\": \"raw.yellow_trips\", \"column\": \"pickup_at\", \"dtype\": \"TIMESTAMP\", \"dtype_stable\": true, \"max_null_pct\": 0.0, \"row_volume_swing_pct\": 18.13, \"per_month\": [{\"feed_month\": \"2024-06\", \"row_volume\": 3539193, \"null_pct\": 0.0, \"unique_count\": 1696120, \"zero_count\": 0.0, \"negative_count\": 0.0, \"min_value\": \"2008-12-31 00:00:00\", \"max_value\": \"2026-06-26 23:53:12\"}, {\"feed_month\": \"2024-09\", \"ro ..."
+    },
+    {
+      "index": 9,
+      "tool": "get_feature_context",
+      "arguments": {
+        "feature_urn": "urn:li:mlFeature:(nyc_fare_features,is_vendor_myle)"
+      },
+      "elapsed_ms": 56,
+      "result_preview": "{\"urn\": \"urn:li:mlFeature:(nyc_fare_features,is_vendor_myle)\", \"name\": \"is_vendor_myle\", \"description\": \"Trip supplied by vendor 6 (Myle).\", \"data_type\": \"BINARY\", \"source_datasets\": [\"urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_trip_features,PROD)\"], \"source_column\": \"is_vendor_myle\", \"root_columns\": [\"vendor_id\"], \"root_dataset\": \"urn:li:dataset:(urn:li:dataPlatfor ..."
     },
     {
       "index": 10,
       "tool": "profile_column_over_time",
       "arguments": {
         "dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)",
-        "column": "trip_distance"
+        "column": "vendor_id"
       },
-      "elapsed_ms": 164,
-      "result_preview": "{\"dataset\": \"raw.yellow_trips\", \"column\": \"trip_distance\", \"is_categorical\": false, \"per_month\": [{\"feed_month\": \"2024-06\", \"distinct_values\": 4788, \"rows\": 3539193, \"null_pct\": 0.0}, {\"feed_month\": \"2024-09\", \"distinct_values\": 4835, \"rows\": 3633030, \"null_pct\": 0.0}, {\"feed_month\": \"2024-12\", \"distinct_values\": 4669, \"rows\": 3668371, \"null_pct\": 0.0}, {\"feed_month\": \"2025-03\", \"distinct_values\": ..."
+      "elapsed_ms": 126,
+      "result_preview": "{\"dataset\": \"raw.yellow_trips\", \"column\": \"vendor_id\", \"is_categorical\": true, \"per_month\": [{\"feed_month\": \"2024-06\", \"distinct_values\": 3, \"rows\": 3539193, \"null_pct\": 0.0}, {\"feed_month\": \"2024-09\", \"distinct_values\": 3, \"rows\": 3633030, \"null_pct\": 0.0}, {\"feed_month\": \"2024-12\", \"distinct_values\": 4, \"rows\": 3668371, \"null_pct\": 0.0}, {\"feed_month\": \"2025-03\", \"distinct_values\": 4, \"rows\": 41 ..."
     },
     {
       "index": 11,
-      "tool": "profile_column_over_time",
+      "tool": "check_standard_monitors",
       "arguments": {
         "dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)",
         "column": "vendor_id"
       },
-      "elapsed_ms": 177,
-      "result_preview": "{\"dataset\": \"raw.yellow_trips\", \"column\": \"vendor_id\", \"is_categorical\": true, \"per_month\": [{\"feed_month\": \"2024-06\", \"distinct_values\": 3, \"rows\": 3539193, \"null_pct\": 0.0}, {\"feed_month\": \"2024-09\", \"distinct_values\": 3, \"rows\": 3633030, \"null_pct\": 0.0}, {\"feed_month\": \"2024-12\", \"distinct_values\": 4, \"rows\": 3668371, \"null_pct\": 0.0}, {\"feed_month\": \"2025-03\", \"distinct_values\": 4, \"rows\": 41 ..."
+      "elapsed_ms": 84,
+      "result_preview": "{\"dataset\": \"raw.yellow_trips\", \"column\": \"vendor_id\", \"dtype\": \"INTEGER\", \"dtype_stable\": true, \"max_null_pct\": 0.0, \"row_volume_swing_pct\": 18.13, \"per_month\": [{\"feed_month\": \"2024-06\", \"row_volume\": 3539193, \"null_pct\": 0.0, \"unique_count\": 3, \"zero_count\": 0.0, \"negative_count\": 0.0, \"min_value\": \"1\", \"max_value\": \"6\"}, {\"feed_month\": \"2024-09\", \"row_volume\": 3633030, \"null_pct\": 0.0, \"unique ..."
     },
     {
       "index": 12,
-      "tool": "measure_attributable_error",
-      "arguments": {
-        "segment_value": 7
-      },
-      "elapsed_ms": 135,
-      "result_preview": "{\"affected_rows\": 66146, \"production_mae\": 4.606, \"control_mae\": 3.1674, \"attributable_mae_per_row\": 1.4386, \"attributable_dollars\": 95158.12, \"gross_amount_exposed\": 1698233.95, \"first_affected_at\": \"2025-06-01 00:00:07\", \"last_affected_at\": \"2025-06-30 23:59:17\", \"segment_column\": \"vendor_id\", \"segment_value\": 7, \"baseline_rows\": 3840878, \"baseline_control_lift_per_row\": 0.0731, \"did_attributabl ..."
-    },
-    {
-      "index": 13,
       "tool": "report_root_cause",
       "arguments": {
         "confident": true,
-        "headline": "Introduction of an unseen vendor (`vendor_id = 7`) starting December 2024 led to corrupted predictions for that segment.",
-        "root_cause_dataset": "raw.yellow_trips",
+        "headline": "Introduction of unrecognized vendor_id (7) into real-time data not seen in training data.",
+        "root_cause_dataset": "urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)",
         "root_cause_column": "vendor_id",
-        "change_description": "A new value in `vendor_id` appeared in December 2024, for vendor `7`, which was not part of the training data.",
-        "mechanism": "The model was trained with vendors `1`, `2`, and `6`. The appearance of vendor `7` led to model misprediction primarily due to encoding mismatches, as it lacked respective handling in the feature engineering phase.",
+        "change_description": "A new vendor (7) began appearing in the data as of December 2024, introducing semantic drift due to the absence of this category in the model's training phase.",
+        "mechanism": "Vendor 7 inflates drift in trip_minutes and avg_speed_mph calculations due to missing category handling in is_vendor_myle derived feature, leading to upstream impact on revenue predictions.",
         "affected_features": [
+          "trip_minutes",
+          "avg_speed_mph",
           "is_vendor_cmt",
           "is_vendor_curb",
           "is_vendor_myle"
         ],
-        "why_monitors_missed_it": "Monitoring largely targets structural changes such as schema alterations, null rates, volume, not semantic changes like unseen categorical values.",
+        "why_monitors_missed_it": "All standard structural monitors (freshness, volume, nulls, schema) were silent as they don't track semantic changes. However, a unique count monitor did flag the appearance of a new category.",
         "impact": {
           "affected_rows": 66146,
           "production_mae": 4.606,
@@ -198,13 +196,15 @@
           "did_attributable_dollars": 90322.36,
           "estimator_note": "did_* nets out the control model's advantage from having more and fresher training data, measured on segments with no encoding defect. Report did_attributable_dollars as the headline; it is the stricter of the two estimates."
         },
-        "recommended_fix": "Update model training data and encoding logic to include vendor `7`. Adjust feature engineering steps to anticipate new vendor IDs based on updated vendor datasets or automate retraining upon schema validation alerts.",
+        "recommended_fix": "Update model training pipeline to incorporate all active vendor_ids, including 7, and retrain the model.",
         "proven": [
-          "The appearance and impact of `vendor_id = 7` were measured and confirmed.",
-          "Conventional monitors recorded no structural issues but failed to capture the unseen categorical value impact."
+          "Segment 7 shows degenerate trip_minutes and avg_speed_mph with both metrics being zero consistently (Feature Drift Report).",
+          "trip_minutes derived from pickup_at and dropoff_at timestamps (Feature Context).",
+          "Anomalous increase in distinct values in March 2025 for both pickup_at and dropoff_at (Profile Over Time).",
+          "Profile of vendor_id shows the appearance of a new type in December 2024."
         ],
         "inferred": [
-          "The model drift is primarily due to encoding absent for unknown vendor IDs, leading to misalignment with expected feature inputs."
+          "Vendor changes can introduce undisclosed categories leading to drift, reasoned through drift patterns and categorical shifts."
         ]
       },
       "elapsed_ms": 0,

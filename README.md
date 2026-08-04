@@ -181,36 +181,46 @@ Not a description of what it should do. This is the run committed in
 | | |
 |---|---|
 | model | `gpt-4o` |
-| tool calls | 12 |
-| turns | 11 |
-| wall clock | **85.12 seconds** |
-| tokens | 66,359 in / 1,757 out |
-| cost | **$0.183** |
+| tool calls | 28 (4 of them through DataHub's MCP server) |
+| turns | 13 |
+| wall clock | **151.92 seconds** |
+| tokens | 105,048 in / 1,591 out |
+| cost | **$0.279** |
 | verdict | confident |
 | root cause | `raw.yellow_trips.vendor_id` |
-| affected inputs | `trip_minutes`, `avg_speed_mph`, `is_vendor_cmt`, `is_vendor_curb`, `is_vendor_myle` |
+| affected inputs | `is_vendor_cmt`, `is_vendor_curb`, `is_vendor_myle` |
 
 The agent was given a model URN and one vague sentence ("upfront fare quotes have
-drifted upward, nobody knows why"). It read the model's context, compared input
-behaviour across segments, walked feature lineage, profiled columns over time,
-measured the impact, and filed the finding. Then it wrote an incident, a document
-and a column annotation back into DataHub, all live on the instance.
+drifted, nobody knows why"). It read the model's context, compared input
+behaviour across segments, corroborated the suspect column against the lineage
+graph through `datahub_get_lineage` and `datahub_get_entities`, profiled columns
+over time, measured the impact, and filed the finding. Then it wrote an incident,
+a document and a column annotation back into DataHub, all live on the instance.
 
-Note the affected-input list: the upstream change damages the model by **two
-independent routes**, and both are reported.
+### How this run was chosen, and what varies
 
-- The unmapped vendor encoding, so those rows activate no category at all
-  (`is_vendor_*`).
-- The collapse of `trip_minutes` and `avg_speed_mph`, because that vendor
-  reports identical pickup and dropoff timestamps.
+The agent is not deterministic, so it matters how the committed run was picked.
+Three runs were made against a checklist written **before** any of them:
+`confident=true`, root cause `vendor_id`, at least one call through the DataHub
+MCP server, at least two lineage hops, and every line under `proven` surviving a
+read-through. The committed run is the first that met all five.
 
-Getting both in one pass took work. Early runs found one route or the other and
-sometimes named `pickup_at` as the root cause, which is a symptom: those
-timestamps are degenerate *because of which rows they are*. Two general
-principles fixed it, neither of which names anything about this dataset:
-encoding-completeness is a separate signal from value-collapse and both must be
-accounted for, and when several columns look anomalous the one that **defines
-the affected segment** is upstream of the rest.
+The other two are informative and worth stating:
+
+- One reported **both** damage routes (adding `trip_minutes` and `avg_speed_mph`)
+  but made zero MCP calls. Kept as
+  [examples/investigation.fallback.json](examples/investigation.fallback.json).
+- One called `measure_attributable_error` on the wrong segment and quoted a row
+  count belonging to a different vendor. It failed the checklist and was
+  discarded. That is the failure mode to know about.
+
+So: the root cause column and the December 2024 date are reliable across runs.
+**Which** of the two damage routes gets reported, and how much of the graph gets
+touched, is not. The upstream change damages the model twice over: the unmapped
+encoding (`is_vendor_*` all zero) and the collapse of `trip_minutes` /
+`avg_speed_mph` from that vendor's identical timestamps. A single run does not
+dependably surface both. That is a real limitation, not a rough edge, and no run
+was hand-edited to hide it.
 
 ## Closing the loop: the generated fix
 

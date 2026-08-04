@@ -5,7 +5,7 @@
 └─────────────────────────────────────────────────────────────────────────────┘
 Investigating
   from datahub.sdk import Document
-[08/04/26 10:48:07] INFO     Starting MCP server 'datahub'     transport.py:241
+[08/04/26 12:07:15] INFO     Starting MCP server 'datahub'     transport.py:241
                              with transport 'stdio'                            
 
 
@@ -16,55 +16,669 @@ Investigating
           ...DocumentFacetEntityInfo
 
 DataHub MCP server: 21 tools available
-  [ 1] get_model_context(model_urn=urn:li:mlModel:(urn:li:dataPlatform:duckdb,nyc_fare_predictor,PROD))  100ms
-  [ 2] feature_drift_report(segment_column=vendor_id)  1326ms
-  [ 3] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,trip_minutes))  38ms
-  [ 4] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,avg_speed_mph))  40ms
-  [ 5] profile_column_over_time(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  352ms
-  [ 6] profile_column_over_time(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  346ms
-  [thinking] The issue involves semantic drift in the "trip_minutes" and "avg_speed_mph" features, due to changes in the root columns "pickup_at" and "dropoff_at". The "trip_minutes" feature, derived from the difference between these columns, shows degeneration in vendor segment 7. This can be because of altered ...
-  [ 7] measure_attributable_error(segment_value=7)  61ms
-  [ 8] check_standard_monitors(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  309ms
-  [ 9] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,is_vendor_myle))  56ms
-  [10] profile_column_over_time(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  126ms
-  [11] check_standard_monitors(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  84ms
-  [thinking] The problem arises due to the introduction of a new vendor, identified by "vendor_id" 7, into the dataset. This new vendor started appearing in the data in December 2024 and is not represented in the model's training data, leading to error in segments involving this vendor because the associated fea ...
-  [nudge] asking the model to file its finding as a tool call
-  [12] report_root_cause(confident=True, headline=Introduction of unrecognized vendor_id (7) into real-time data no ...)  0ms
+
+
+        ...ownershipFields
+        ...platformFields
+        ...entityDomain
+    ...entityDataProduct
+        ...deprecationFields
+
+            ...displayPropertiesFields
+        ...ownershipFields
+        ...parentNodesFields
+
+            ...glossaryTerm
+
+            ...parentDomainsFields
+        ...domainEntitiesFields
+            ...displayPropertiesFields
+
+    dataProduct: relationships(
+            direction: INCOMING
+            start: 0
+            count: 1
+    ) {
+                        ...entityDomain
+        ...entityDisplayNameFields
+
+        ...nonConflictingPlatformFields
+
+
+
+    entities(
+            start: 0
+            count: 0
+            filters: [
+                    field: "_entityType"
+                    negated: true
+                    values: ["DATA_PRODUCT", "DOMAIN"]
+    ) {
+    dataProducts: entities(
+            start: 0
+            count: 0
+            filters: [{ field: "_entityType", values: ["DATA_PRODUCT"] }]
+    ) {
+    children: relationships(
+    ) {
+
+                ...displayPropertiesFields
+
+            ...platformFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+        memberCount: relationships(
+                direction: INCOMING
+                start: 0
+                count: 1
+        ) {
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+            ...nonRecursiveDataFlowFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+            ...deprecationFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...deprecationFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...deprecationFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...deprecationFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...deprecationFields
+        ...nonConflictingPlatformFields
+            ...parentDomainsFields
+            ...displayPropertiesFields
+        ...domainEntitiesFields
+                    ...entityDisplayNameFields
+        ...entityDisplayNameFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...deprecationFields
+        browsePathV2 {
+                    ...entityDisplayNameFields
+        runEvents(status: COMPLETE, limit: 10) {
+
+
+            ...ownershipFields
+            businessAttributeDataType: type
+                ...globalTagsFields
+                ...glossaryTerms
+
+
+                ...entityDisplayNameFields
+                ...entityDisplayNameFields
+
+        ...structuredPropertyFields
+        ...entityDisplayNameFields
+
+        ...deprecationFields
+            ...structuredPropertiesFields
+            ...businessAttribute
+        ...documentationFields
+
+        ...globalTagsFields
+        ...glossaryTerms
+        ...entitySchemaFieldEntityFields
+
+        ...entitySchemaFieldFields
+                ...platformFields
+                ...ownershipFields
+                ...globalTagsFields
+                ...glossaryTerms
+
+    schemaMetadata(version: 0) {
+        ...schemaMetadataFields
+                ...globalTagsFields
+                ...glossaryTerms
+
+
+        ...datasetSchema
+        ...viewProperties
+        ...structuredPropertyFields
+        ...structuredPropertyDetailsFields
+
+    entity(urn: $urn) {
+        ...entityPreview
+        ...entityDetails
+
+    searchAcrossLineage(input: $input) {
+                ...entityPreview
+
+
+    entity(urn: $urn) {
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+            relatedDocuments(input: $input) {
+                ...relatedDocumentsFields
+
+
+
+        ...ownershipFields
+        ...platformFields
+        ...entityDomain
+    ...entityDataProduct
+        ...deprecationFields
+
+            ...displayPropertiesFields
+        ...ownershipFields
+        ...parentNodesFields
+
+            ...glossaryTerm
+
+            ...parentDomainsFields
+        ...domainEntitiesFields
+            ...displayPropertiesFields
+
+    dataProduct: relationships(
+            direction: INCOMING
+            start: 0
+            count: 1
+    ) {
+                        ...entityDomain
+        ...entityDisplayNameFields
+
+        ...nonConflictingPlatformFields
+
+
+
+    entities(
+            start: 0
+            count: 0
+            filters: [
+                    field: "_entityType"
+                    negated: true
+                    values: ["DATA_PRODUCT", "DOMAIN"]
+    ) {
+    dataProducts: entities(
+            start: 0
+            count: 0
+            filters: [{ field: "_entityType", values: ["DATA_PRODUCT"] }]
+    ) {
+    children: relationships(
+    ) {
+
+                ...displayPropertiesFields
+
+            ...platformFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+        memberCount: relationships(
+                direction: INCOMING
+                start: 0
+                count: 1
+        ) {
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+            ...nonRecursiveDataFlowFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+            ...deprecationFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...deprecationFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...deprecationFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...deprecationFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...deprecationFields
+        ...nonConflictingPlatformFields
+            ...parentDomainsFields
+            ...displayPropertiesFields
+        ...domainEntitiesFields
+                    ...entityDisplayNameFields
+        ...entityDisplayNameFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...deprecationFields
+        browsePathV2 {
+                    ...entityDisplayNameFields
+        runEvents(status: COMPLETE, limit: 10) {
+
+
+            ...ownershipFields
+            businessAttributeDataType: type
+                ...globalTagsFields
+                ...glossaryTerms
+
+
+                ...entityDisplayNameFields
+                ...entityDisplayNameFields
+
+        ...structuredPropertyFields
+        ...entityDisplayNameFields
+
+        ...deprecationFields
+            ...structuredPropertiesFields
+            ...businessAttribute
+        ...documentationFields
+
+        ...globalTagsFields
+        ...glossaryTerms
+        ...entitySchemaFieldEntityFields
+
+        ...entitySchemaFieldFields
+                ...platformFields
+                ...ownershipFields
+                ...globalTagsFields
+                ...glossaryTerms
+
+    schemaMetadata(version: 0) {
+        ...schemaMetadataFields
+                ...globalTagsFields
+                ...glossaryTerms
+
+
+        ...datasetSchema
+        ...viewProperties
+        ...structuredPropertyFields
+        ...structuredPropertyDetailsFields
+
+    entity(urn: $urn) {
+        ...entityPreview
+        ...entityDetails
+
+    searchAcrossLineage(input: $input) {
+                ...entityPreview
+
+
+
+        ...ownershipFields
+        ...platformFields
+        ...entityDomain
+    ...entityDataProduct
+        ...deprecationFields
+
+            ...displayPropertiesFields
+        ...ownershipFields
+        ...parentNodesFields
+
+            ...glossaryTerm
+
+            ...parentDomainsFields
+        ...domainEntitiesFields
+            ...displayPropertiesFields
+
+    dataProduct: relationships(
+            direction: INCOMING
+            start: 0
+            count: 1
+    ) {
+                        ...entityDomain
+        ...entityDisplayNameFields
+
+        ...nonConflictingPlatformFields
+
+
+
+    entities(
+            start: 0
+            count: 0
+            filters: [
+                    field: "_entityType"
+                    negated: true
+                    values: ["DATA_PRODUCT", "DOMAIN"]
+    ) {
+    dataProducts: entities(
+            start: 0
+            count: 0
+            filters: [{ field: "_entityType", values: ["DATA_PRODUCT"] }]
+    ) {
+    children: relationships(
+    ) {
+
+                ...displayPropertiesFields
+
+            ...platformFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+        memberCount: relationships(
+                direction: INCOMING
+                start: 0
+                count: 1
+        ) {
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+            ...nonRecursiveDataFlowFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...entityDomain
+        ...entityDataProduct
+            ...deprecationFields
+            ...entityHealth
+            ...deprecationFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...deprecationFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...deprecationFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...deprecationFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...deprecationFields
+        ...nonConflictingPlatformFields
+            ...parentDomainsFields
+            ...displayPropertiesFields
+        ...domainEntitiesFields
+                    ...entityDisplayNameFields
+        ...entityDisplayNameFields
+            ...ownershipFields
+            ...globalTagsFields
+            ...glossaryTerms
+                ...structuredPropertiesFields
+            ...platformFields
+            ...deprecationFields
+        browsePathV2 {
+                    ...entityDisplayNameFields
+        runEvents(status: COMPLETE, limit: 10) {
+
+
+            ...ownershipFields
+            businessAttributeDataType: type
+                ...globalTagsFields
+                ...glossaryTerms
+
+
+                ...entityDisplayNameFields
+                ...entityDisplayNameFields
+
+        ...structuredPropertyFields
+        ...entityDisplayNameFields
+
+        ...deprecationFields
+            ...structuredPropertiesFields
+            ...businessAttribute
+        ...documentationFields
+
+        ...globalTagsFields
+        ...glossaryTerms
+        ...entitySchemaFieldEntityFields
+
+        ...entitySchemaFieldFields
+                ...platformFields
+                ...ownershipFields
+                ...globalTagsFields
+                ...glossaryTerms
+
+    schemaMetadata(version: 0) {
+        ...schemaMetadataFields
+                ...globalTagsFields
+                ...glossaryTerms
+
+
+        ...datasetSchema
+        ...viewProperties
+        ...structuredPropertyFields
+        ...structuredPropertyDetailsFields
+
+    entity(urn: $urn) {
+        ...entityPreview
+        ...entityDetails
+
+    searchAcrossLineage(input: $input) {
+                ...entityPreview
+
+
+
+
+
+
+
+) {
+      types: $types
+      sortInput: $sortInput
+  ) {
+        ...SearchEntityInfo
+          ...FacetEntityInfo
+
+  [ 1] get_model_context(model_urn=urn:li:mlModel:(urn:li:dataPlatform:duckdb,nyc_fare_predictor,PROD))  39ms
+  [ 2] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,trip_distance))  59ms
+  [ 3] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,trip_minutes))  21ms
+  [ 4] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,avg_speed_mph))  24ms
+  [ 5] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,passenger_count))  19ms
+  [ 6] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,pickup_hour))  23ms
+  [ 7] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,pickup_dow))  22ms
+  [ 8] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,pu_location_id))  17ms
+  [ 9] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,do_location_id))  42ms
+  [10] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,is_vendor_cmt))  19ms
+  [11] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,is_vendor_curb))  70ms
+  [12] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,is_vendor_myle))  32ms
+  [13] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,is_airport_rate))  31ms
+  [14] get_feature_context(feature_urn=urn:li:mlFeature:(nyc_fare_features,is_card_payment))  34ms
+  [15] feature_drift_report(segment_column=vendor_id)  820ms
+  [16] profile_column_over_time(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  151ms
+  [17] profile_column_over_time(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  29ms
+  [18] profile_column_over_time(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  304ms
+  [19] profile_column_over_time(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  322ms
+  [20] measure_attributable_error(segment_value=7)  113ms
+  [21] check_standard_monitors(dataset=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD) ...)  99ms
+  [22] list_columns(dataset=main_serving.fare_predictions)  0ms
+  [23] datahub_get_entities(urns=urn:li:mlFeatureTable:(urn:li:dataPlatform:duckdb,nyc_fare_features))  701ms
+  [24] datahub_get_lineage(urn=urn:li:mlFeatureTable:(urn:li:dataPlatform:duckdb,nyc_fare_features), upstream=True)  581ms
+  [25] datahub_get_lineage(urn=urn:li:mlFeatureTable:(urn:li:dataPlatform:duckdb,nyc_fare_features), upstream=False)  518ms
+  [26] datahub_search(query=/q fct_trip_features, filter=entity_type = dataset)  1106ms
+  [27] get_upstream_lineage(dataset_urn=urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.main_marts.fct_tri ...)  163ms
+  [28] report_root_cause(confident=True, headline=A new vendor ID '7' appeared in the data starting December 2024,  ...)  0ms
 ┌──────────────────────────────── ROOT CAUSE ─────────────────────────────────┐
-│ Introduction of unrecognized vendor_id (7) into real-time data not seen in  │
-│ training data.                                                              │
+│ A new vendor ID '7' appeared in the data starting December 2024, causing    │
+│ the model to score these rows as unknown.                                   │
 └─────────────────────────────────────────────────────────────────────────────┘
 urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PR
 OD).vendor_id   <- root cause
   |
-  +-- nyc_fares.warehouse.main_marts.fct_trip_features
-       |  trip_minutes  corrupted
-       |  avg_speed_mph  corrupted
-       |  is_vendor_cmt  corrupted
-       |  is_vendor_curb  corrupted
-       |  is_vendor_myle  corrupted
+  +-- warehouse.main_staging.stg_yellow_trips
        |
-       +-- nyc_fare_predictor v1.4.0
-            trained on: 2024-06,2024-09   <- never saw the new value
+       +-- nyc_fares.warehouse.main_marts.fct_trip_features
+            |  is_vendor_cmt  corrupted
+            |  is_vendor_curb  corrupted
+            |  is_vendor_myle  corrupted
+            |
+            +-- nyc_fare_predictor v1.4.0
+                 trained on: 2024-06,2024-09   <- never saw the new value
   Dataset            urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.wareh…  
   Column             vendor_id                                                 
-  Affected inputs    trip_minutes, avg_speed_mph, is_vendor_cmt,               
-                     is_vendor_curb, is_vendor_myle                            
+  Affected inputs    is_vendor_cmt, is_vendor_curb, is_vendor_myle             
 ┌─────────────────────────────── What changed ────────────────────────────────┐
-│ A new vendor (7) began appearing in the data as of December 2024,           │
-│ introducing semantic drift due to the absence of this category in the       │
-│ model's training phase.                                                     │
+│ The vendor_id column in the raw.yellow_trips dataset started including the  │
+│ new value '7' from December 2024 onwards. This new value was not seen in    │
+│ the training data and thus was not encoded for model prediction.            │
 └─────────────────────────────────────────────────────────────────────────────┘
 ┌───────────────────────────────── Mechanism ─────────────────────────────────┐
-│ Vendor 7 inflates drift in trip_minutes and avg_speed_mph calculations due  │
-│ to missing category handling in is_vendor_myle derived feature, leading to  │
-│ upstream impact on revenue predictions.                                     │
+│ The presence of a new vendor ID resulted in categorical feature mismatch,   │
+│ affecting the encoded features is_vendor_cmt, is_vendor_curb, and           │
+│ is_vendor_myle, with none of these indicators firing for the new vendor ID, │
+│ causing the model to categorize these data points as unknown.               │
 └─────────────────────────────────────────────────────────────────────────────┘
 ┌────────────────────── Why every monitor stayed green ───────────────────────┐
-│ All standard structural monitors (freshness, volume, nulls, schema) were    │
-│ silent as they don't track semantic changes. However, a unique count        │
-│ monitor did flag the appearance of a new category.                          │
+│ Conventional monitors did not fire because schema, freshness, and volume    │
+│ checks remained stable. The unique count monitor was the only one that      │
+│ noticed a new categorical level, but it did not attribute it to model       │
+│ scoring logic disruption.                                                   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ┌─────────────────── Measured impact (SQL, net of control) ───────────────────┐
 │ ┌───────────────────────────────┬───────────────┐                           │
@@ -82,22 +696,21 @@ OD).vendor_id   <- root cause
 │ └───────────────────────────────┴───────────────┘                           │
 └─────────────────────────────────────────────────────────────────────────────┘
 ┌────────────────────────────── Recommended fix ──────────────────────────────┐
-│ Update model training pipeline to incorporate all active vendor_ids,        │
-│ including 7, and retrain the model.                                         │
+│ Update the feature engineering pipeline to handle the new vendor ID '7' and │
+│ retrain the model with data that includes this new category.                │
 └─────────────────────────────────────────────────────────────────────────────┘
 Proven from tool output
-  + Segment 7 shows degenerate trip_minutes and avg_speed_mph with both metrics
-being zero consistently (Feature Drift Report).
-  + trip_minutes derived from pickup_at and dropoff_at timestamps (Feature 
-Context).
-  + Anomalous increase in distinct values in March 2025 for both pickup_at and 
-dropoff_at (Profile Over Time).
-  + Profile of vendor_id shows the appearance of a new type in December 2024.
+  + A new vendor ID '7' appeared starting December 2024 as per vendor_id 
+profiling.
+  + Feature drift analysis identified feature degradation in segment for vendor
+ID '7'.
+  + Semantic change in vendor_id explains the change in model performance for 
+these specific rows.
 Inferred, not measured
-  ~ Vendor changes can introduce undisclosed categories leading to drift, 
-reasoned through drift patterns and categorical shifts.
-12 tool calls, 11 turns, 85.12s wall clock | gpt-4o | 66,359 in / 1,757 out 
-tokens | ~$0.183
+  ~ The model is categorizing these rows as unknown due to missing encoded 
+features for the new vendor ID.
+28 tool calls, 13 turns, 151.92s wall clock | gpt-4o | 105,048 in / 1,591 out 
+tokens | ~$0.279
 trace written to 
 C:\Users\Jon_A\OneDrive\Desktop\Projects\Time3\BuildwithDataHub\examples\invest
 igation.json
@@ -107,10 +720,10 @@ Writing findings back to DataHub
                 entity(urn: $urn) {
 
             updateDescription(input: $input)
-  incident_urn: urn:li:incident:89067ff3-a632-4fb0-a532-9e982b801a94
+  incident_urn: urn:li:incident:45a776c7-a1a7-4854-a2d2-48c6308f3f06
   document: 
-{"success":true,"urn":"urn:li:document:shared-eeb5af0b-ec01-4d62-b048-140b8cc5b
-579","message":"Successfully created document: Root cause: vendor_id semantic 
+{"success":true,"urn":"urn:li:document:shared-6d86e4d0-09fb-4371-96fe-f78933d2d
+210","message":"Successfully created document: Root cause: vendor_id semantic 
 change","author":"__datahub_system"}
   column_annotation: 
 ['{"success":true,"urn":"urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.ware

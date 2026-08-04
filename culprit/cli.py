@@ -32,10 +32,14 @@ from culprit.writeback import write_back_all
 console = Console()
 
 DEFAULT_MODEL_URN = "urn:li:mlModel:(urn:li:dataPlatform:duckdb,nyc_fare_predictor,PROD)"
+# Deliberately vague, and deliberately non-directional. An earlier version said
+# "drifted upward", which the data contradicts: the signed bias on the affected
+# segment is negative, so the model under-quotes those trips. The agent should
+# not be handed a direction the evidence does not support.
 DEFAULT_SYMPTOM = (
-    "Upfront fare quotes have drifted upward against settled fares over recent "
-    "months. No pipeline has failed, no alert has fired, and the schema has not "
-    "changed. Nobody knows why."
+    "Upfront fare quotes have drifted away from settled fares over recent months. "
+    "No pipeline has failed, no alert has fired, and the schema has not changed. "
+    "Nobody knows why."
 )
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 

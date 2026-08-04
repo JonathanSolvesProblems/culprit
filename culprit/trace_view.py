@@ -52,7 +52,7 @@ def render_lineage_path(
     lines: list[Text] = []
 
     head = Text()
-    head.append(f"{root_dataset}.", style="bold")
+    head.append(f"{_short(root_dataset)}.", style="bold")
     head.append(root_column, style="bold red")
     head.append("   <- root cause", style="red")
     lines.append(head)

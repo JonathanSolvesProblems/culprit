@@ -120,14 +120,37 @@ depending on which API you are on. A subselection on it fails with
 
 ## Intended contributions
 
-1. **Issue on incident resource types** (item 1). Unclaimed as of Aug 4 2026, and
-   the highest-value of the three: the failure is a runtime exception rather than
-   a validation message naming the allowed set, and it blocks the obvious ML
-   observability workflow.
-2. **Documentation fix** listing the entity types the incident aspect accepts,
-   following the issue.
-3. **Documentation note** on items 5 and 6, both cases where a call reports
-   success while doing nothing observable.
+Checked against what is already filed, on Aug 4 2026, before filing anything.
+
+**Item 1 is already claimed, and I am not re-filing it.**
+[datahub#18685](https://github.com/datahub-project/datahub/pull/18685),
+*"docs(incidents): list the entity types that support incidents"*, was opened on
+2026-07-28 by `cnpierrepapi`. It documents the same mlModel rejection, lists the
+supported set (`dataset, dataJob, dataFlow, chart, dashboard, service, aiAgent`),
+and recommends the same workaround Culprit already implements: raise the incident
+on the dataset the model trained on. Filing my own version a week later would be
+a near-duplicate, which is exactly the thing I declined to do with the skills PR.
+
+What I will add there instead is a **comment with an independent reproduction on a
+different surface**: #18685 hit it through the GraphQL mutation, Culprit hit it
+through the SDK aspect emit, which fails with `Invalid format for aspect:
+incident` rather than the `is not a valid destination` message. Same gap, second
+code path, useful to whoever fixes it.
+
+**Item 5 is genuinely unclaimed, and is the one I am filing.**
+`acryldata/mcp-server-datahub` has 39 open issues and none covers it: calling
+`update_description` with a `column_path` that matches no field on the entity
+returns `{"success": true}` and writes nothing observable. It cost an hour of real
+debugging here, because the dbt connector creates two sibling datasets and only
+one of them carries `schemaMetadata`:
+
+| dataset | schema fields |
+|---|---|
+| `dbt,nyc_fares.warehouse.raw.yellow_trips` | 14 |
+| `duckdb,warehouse.raw.yellow_trips` | 0 |
+
+The ask is small and concrete: warn or error when `column_path` resolves to no
+field on the target entity, instead of reporting success.
 
 ### A skill I drafted and deliberately did not file
 

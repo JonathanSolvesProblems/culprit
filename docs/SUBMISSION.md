@@ -192,14 +192,23 @@ it. Submitting a near-duplicate of somebody else's open PR would add noise to a
 repo already carrying 56 of them, and would read as derivative even though it was
 not.
 
-The draft stays in the repo at `contrib/datahub-skills/` as working evidence, and
-the effort is redirected to something genuinely unclaimed: an issue against
-DataHub Core for the mlModel incident rejection (finding #1 in
-`docs/DATAHUB_FINDINGS.md`), plus a documentation fix listing which entity types
-the incident aspect actually accepts. That failure currently surfaces as a runtime
-exception rather than a validation message naming the allowed set.
+The draft stays in the repo at `contrib/datahub-skills/` as working evidence.
 
-The full list of eight verified findings is in `docs/DATAHUB_FINDINGS.md`.
+I then checked the rest of my findings against what was already filed, rather than
+assuming. The mlModel incident rejection, which I had planned to file, is also
+already claimed: datahub#18685 documents it, lists the supported entity types, and
+recommends the same workaround Culprit implements. So I am not re-filing that
+either. I will add a comment there with an independent reproduction through the
+SDK aspect emit, which fails with a different error than the GraphQL path.
+
+What I am filing is the one finding nothing else covers, across 39 open issues on
+`acryldata/mcp-server-datahub`: `update_description` with a `column_path` that
+matches no field returns `{"success": true}` and writes nothing. That one cost me
+an hour, because DataHub's dbt connector creates two sibling datasets and only one
+carries `schemaMetadata`.
+
+Two near-duplicates avoided by checking first. The full list of eight verified
+findings is in `docs/DATAHUB_FINDINGS.md`.
 
 ## Built with
 

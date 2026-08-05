@@ -6,7 +6,11 @@ Paste-ready. Category: **Production ML Agents**.
 
 ## Tagline
 
-A stack trace for model decay.
+A stack trace for model decay. It names the column, prices the damage, and opens
+the PR.
+
+Short variant if the field is character-capped:
+`A stack trace for model decay - it names the column, prices the damage, opens the PR.`
 
 ---
 

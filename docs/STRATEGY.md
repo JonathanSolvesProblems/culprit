@@ -78,7 +78,9 @@ Leading with "deterministic core, advisory AI" has now lost twice. Inverted here
 
 The judging criteria says strong submissions go beyond reading. Culprit writes:
 
-- a DataHub **Incident** raised on the affected `mlModel` via `raiseIncident`
+- a DataHub **Incident** via `raiseIncident`, raised on the model's source dataset
+  rather than the `mlModel` itself, because DataHub rejects `mlModel` URNs as
+  incident resources (finding #1 in `DATAHUB_FINDINGS.md`)
 - a root-cause **Document** (`save_document`) linked to the model and the source column
 - **structured properties** recording the detected semantic change on the source column
 - the **ML lineage itself** (`mlModel`, `mlFeature`, `mlFeatureTable`,

@@ -1,6 +1,7 @@
 # Culprit
 
-**A stack trace for model decay.**
+**A stack trace for model decay. It names the column, prices the damage, and
+opens the PR.**
 
 Freshness, volume, null-rate and schema checks were all green. The model had been
 quietly wrong for six months. Culprit walked DataHub's ML lineage back to the
@@ -43,10 +44,11 @@ The row-count gate caught it and refused to open the PR
 catch-all bucket, so it will not break again on the next new vendor:
 [PR #1](https://github.com/JonathanSolvesProblems/culprit/pull/1).
 
-### See it without installing anything
+### See it without a key, without Docker, without a warehouse
 
-No API key, no Docker, no DataHub instance. This renders a real recorded
-investigation, including its timestamps and cost:
+You do install the dependencies. You do not need an API key, a DataHub instance,
+or the 19.3M-row warehouse. This renders a real recorded investigation, including
+its timestamps and cost. Python 3.11 or 3.12:
 
 ```bash
 git clone https://github.com/JonathanSolvesProblems/culprit && cd culprit

@@ -27,6 +27,10 @@ DOCS = [
     ROOT / "docs" / "DEMO_SCRIPT.md",
     ROOT / "docs" / "STRATEGY.md",
     ROOT / "docs" / "DATAHUB_FINDINGS.md",
+    # Source files make claims too, in docstrings, and those were where the
+    # retired mlModel claim survived three review rounds.
+    ROOT / "culprit" / "writeback.py",
+    ROOT / "culprit" / "agent.py",
 ]
 
 
@@ -98,11 +102,18 @@ def main() -> int:
         print(f"  {status}  {label:38s} = {actual}   {'in ' + ', '.join(found_in) if found_in else '(not cited)'}")
 
     # Statements that must NOT appear anywhere: retired overclaims.
+    # Patterns must be loose enough to catch rewordings. An earlier version of
+    # this list required the exact string "Incident on the affected mlModel",
+    # which silently failed to match the two live instances that actually read
+    # "Incident RAISED on the affected mlModel". The gate reported "absent"
+    # about text that was present, which is worse than having no gate at all.
+    # Anchor on the claim, not on a sentence.
     banned = [
-        ("absolute monitor claim", r"[Nn]o monitor (on earth|can|could)"),
-        ("drift tools have no lineage", r"[Tt]hey have no lineage"),
-        ("incident raised on the model", r"[Ii]ncident on the affected `?mlModel"),
-        ("skills contribution claimed as filed", r"I contributed a `datahub-ml-lineage`"),
+        ("absolute monitor claim", r"[Nn]o monitor (on earth|can|could|would)"),
+        ("drift tools have no lineage", r"(have|has) no lineage"),
+        ("incident on the mlModel", r"[Ii]ncident\b[^.\n]{0,40}\bon the affected[^.\n]{0,20}mlModel"),
+        ("skills contribution claimed as filed", r"I contributed a `?datahub-ml-lineage"),
+        ("two metrics fire", r"[Tt]wo metrics do fire"),
     ]
     print("\n" + "=" * 78)
     print("RETIRED CLAIMS (must not reappear)")

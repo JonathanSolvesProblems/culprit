@@ -7,7 +7,9 @@ rediscover from scratch.
 
 Culprit leaves three artifacts behind, all on the real instance:
 
-  1. an Incident raised on the affected mlModel (GraphQL raiseIncident)
+  1. an Incident raised on the affected model's SOURCE DATASET (GraphQL
+     raiseIncident). Not on the mlModel itself: DataHub rejects mlModel URNs as
+     incident resources. See raise_incident() below and docs/DATAHUB_FINDINGS.md.
   2. a knowledge document holding the full trace (MCP save_document)
   3. structured annotation on the offending source column, so anyone who opens
      that column in DataHub sees that it broke a model downstream (MCP
@@ -86,7 +88,11 @@ def raise_incident(
         f"per row under symmetric loss, not realised revenue)"
         if isinstance(dollars, (int, float)) else "",
         f"- Affected rows: {rows:,}" if isinstance(rows, (int, float)) else "",
-        f"- Attributable error per row: ${impact.get('attributable_mae_per_row')}",
+        # Must be the same estimator as the total above. Quoting the DiD total
+        # beside the naive per-row figure makes the two fail to multiply, in the
+        # artifact a reviewer is most likely to read closely.
+        f"- Attributable error per row: $"
+        f"{impact.get('did_attributable_mae_per_row') or impact.get('attributable_mae_per_row')}",
         "",
         "## Recommended fix",
         root_cause.get("recommended_fix", ""),

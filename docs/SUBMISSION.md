@@ -26,7 +26,9 @@ only visible trace at the source is a single column's maximum value going from
 6 to 7.
 
 I ran the fuller sweep too, rather than only the checks that flatter the story,
-and two metrics do fire. `unique_count` on `vendor_id` goes 3 to 4 in December
+and four metrics fire, two of which are false alarms that predate the defect by
+months (a distinct-value count tracking row volume, and pre-existing bad geometry
+in the raw feed). Of the two that are real: `unique_count` on `vendor_id` goes 3 to 4 in December
 2024, which is the same integer the max already shows and names no model.
 `zero_count` on the derived speed feature climbs, but in December 2024 that is
 255 rows out of 3,502,209, against a baseline already swinging between 33 and 43.

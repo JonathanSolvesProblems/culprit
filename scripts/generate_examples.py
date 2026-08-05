@@ -138,7 +138,13 @@ def main() -> None:
     uc = monitors.get("unique_count_first_change")
     lines += [
         "",
-        "### The two that fire, and why neither is actionable",
+        "### The four that fire, and why none is actionable",
+        "",
+        "Two of the four are false alarms that predate the defect: `unique_count` on",
+        "`avg_speed_mph` first exceeds its prior maximum in 2024-09, and",
+        "`negative_count` on the same column is non-zero from 2024-06. The first is a",
+        "distinct-value count tracking row volume on a continuous column; the second is",
+        "pre-existing bad geometry in the raw feed. The two below are the real ones.",
         "",
         f"- `unique_count` on `vendor_id` goes {uc['from']} to {uc['to']} in "
         f"{uc['month']}. That is the same integer the max value already shows, "

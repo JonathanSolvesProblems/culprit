@@ -128,10 +128,17 @@ anything have caught this?** I ran the full sweep rather than only the metrics
 that flatter the story, at both the source and the derived-feature layer. The raw
 output is in [examples/02_monitor_sweep.json](examples/02_monitor_sweep.json).
 
-Two metrics do fire.
+Four metrics fire, and half of them are false alarms.
 
-`unique_count` on `vendor_id` goes 3 to 4 in 2024-12. That is the same integer the
-max value already shows, and it names no model.
+`unique_count` on `avg_speed_mph` first exceeds its prior maximum in **2024-09**,
+and `negative_count` on the same column is non-zero from **2024-06**. Both predate
+the defect entirely. The first is just a distinct-value count tracking row volume
+on a continuous column; the second is pre-existing bad geometry in the raw feed.
+An on-call engineer chasing those finds nothing, twice, before the real thing
+starts.
+
+`unique_count` on `vendor_id` goes 3 to 4 in 2024-12. That is the real signal, and
+it is the same integer the max value already shows. It names no model.
 
 `zero_count` on `avg_speed_mph` climbs, precisely because the `coalesce` that
 dodges the null check lands the corruption in the zero count instead:
@@ -182,9 +189,17 @@ the tool catalogue in [`culprit/agent.py`](culprit/agent.py), and both
 the agent has to work out which column defines the segments and which value is the
 outlier before it can ask about either.
 
-Worth stating because I got it wrong once: an earlier version carried
-`"default": "vendor_id"` in two tool schemas, which quietly handed over half the
-answer while this README claimed otherwise. It was caught in review and removed.
+Worth stating because I got it wrong **twice**. The first version carried
+`"default": "vendor_id"` in two tool schemas. Removing those was not enough: the
+same defaults were still sitting in the underlying Python signatures, including
+`segment_value: int | str = 7`, the literal answer, in the very function that
+computes the headline figure. Both are now gone.
+
+The committed run predates the second fix, and the trace shows it: step 20 calls
+`measure_attributable_error` with `segment_value=7` and no `segment_column`,
+because the parameter was still optional when the run was recorded. The agent did
+supply `vendor_id` itself to `feature_drift_report` earlier in the same run. I am
+leaving the trace as recorded rather than re-running to make it look tidier.
 
 ## The recorded run
 

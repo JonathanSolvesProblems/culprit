@@ -4,11 +4,13 @@
 # and end up with a working DataHub instance, a real warehouse, a trained
 # model, full ML lineage in the graph, and a completed investigation.
 
-PY ?= python
+# python3 on POSIX, python on Windows where python3 is usually absent.
+PY ?= python3
 VENV := .venv
 BIN := $(VENV)/bin
 ifeq ($(OS),Windows_NT)
 	BIN := $(VENV)/Scripts
+	PY := python
 endif
 
 .PHONY: help install datahub data transform ingest train score lineage investigate demo verify examples clean
@@ -29,7 +31,7 @@ help:
 	@echo "make demo         everything above, in order"
 
 install:
-	$(PY) -m venv $(VENV)
+	@test -d $(VENV) || $(PY) -m venv $(VENV)
 	$(BIN)/python -m pip install --upgrade pip
 	$(BIN)/python -m pip install -r requirements.txt
 	$(BIN)/python -m pip install mcp-server-datahub
@@ -56,25 +58,25 @@ score:
 lineage:
 	$(BIN)/python pipeline/emit_ml_lineage.py
 
-investigate:
+investigate: install
 	$(BIN)/python -m culprit.cli investigate --write-back
 
-fix:
+fix: install
 	$(BIN)/python -m culprit.cli fix
 
-replay:
+replay: install
 	$(BIN)/python -m culprit.cli replay --animate
 
-examples:
+examples: install
 	$(BIN)/python scripts/generate_examples.py
 
 # Independent verification that the incident is real. Needs no DataHub and no
 # API key. Run this first if you only have a few minutes.
-verify:
+verify: install
 	$(BIN)/python scripts/scan_tlc_semantics.py
 	$(BIN)/python scripts/validate_impact.py
 
-demo: datahub data transform ingest train score lineage investigate
+demo: install datahub data transform ingest train score lineage investigate
 
 clean:
 	rm -f pipeline/warehouse.duckdb pipeline/warehouse.duckdb.wal

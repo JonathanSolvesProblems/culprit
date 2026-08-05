@@ -5,14 +5,19 @@ columns to walk back to, what the change in those columns means, and whether a
 hypothesis survives contact with the evidence.
 
 Nothing about the NYC taxi feed, vendor codes or one-hot encoding appears in the
-system prompt or the tool catalogue: `grep -i vendor culprit/agent.py` returns
-only this paragraph. Both `segment_column` and `segment_value` are required
+system prompt or the tool catalogue. `grep -i vendor culprit/agent.py` returns
+this paragraph and one custom-property key (`vendors_in_training_data`) read back
+out of the graph. Both `segment_column` and `segment_value` are required
 parameters with no defaults, so the agent has to discover which column defines
 the segments and which value is the outlier before it can ask about either.
 
-An earlier version of this file did carry `"default": "vendor_id"` in two tool
-schemas, which quietly handed the agent the answer while the README claimed
-otherwise. That is worth recording rather than silently deleting.
+Getting that right took two passes and both are worth recording rather than
+quietly deleting. The first version carried `"default": "vendor_id"` in two tool
+schemas. Removing those left the same defaults still sitting in the underlying
+Python signatures in `culprit/warehouse.py`, including
+`segment_value: int | str = 7`, which is the literal answer. The committed run
+predates the second fix, which is why its `measure_attributable_error` call reads
+`segment_value=7` with no `segment_column`.
 
 The deterministic layer underneath (culprit/warehouse.py) exists so the agent
 cannot invent a number. Every dollar and every row count in the final report is
@@ -286,7 +291,7 @@ LOCAL_TOOL_SPECS: list[dict[str, Any]] = [
                 },
                 "segment_value": {"type": ["integer", "string"]},
             },
-            "required": ["segment_value"],
+            "required": ["segment_column", "segment_value"],
         },
     },
     {

@@ -126,7 +126,7 @@ EXCLUDED_FROM_DRIFT = {
 }
 
 
-def feature_drift_report(segment_column: str = "vendor_id") -> dict[str, Any]:
+def feature_drift_report(segment_column: str) -> dict[str, Any]:
     """Per-segment behaviour of every model input in the serving table.
 
     Input names are discovered from the schema rather than written into this
@@ -224,7 +224,7 @@ def feature_drift_report(segment_column: str = "vendor_id") -> dict[str, Any]:
 
 
 def measure_attributable_error(
-    segment_column: str = "vendor_id", segment_value: int | str = 7
+    segment_column: str, segment_value: int | str
 ) -> dict[str, Any]:
     """Dollar impact attributable to the defect, net of a counterfactual control.
 

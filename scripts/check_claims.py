@@ -69,6 +69,14 @@ def main() -> int:
         ("zero_count first exceedance month", zero.get("month"), ["2024-12"]),
         ("zero_count rows at first exceedance", zero.get("to"), ["255"]),
         ("unique_count first exceedance month", uniq.get("month"), ["2024-12"]),
+        ("monitors that fire (both layers)",
+         sum(
+             1
+             for layer in ("source_column", "derived_feature")
+             for k, v in (sweep.get(layer) or {}).items()
+             if k.endswith("_would_fire") and v
+         ) or None,
+         ["Four metrics fire", "four metrics fire", "four that fire"]),
     ]
 
     corpus = {p: p.read_text(encoding="utf-8") for p in DOCS if p.exists()}

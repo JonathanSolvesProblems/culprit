@@ -18,14 +18,30 @@ Challenge: **Production ML Agents**. Apache 2.0.
 > taxi trips, caused by one upstream column's maximum value changing from 6 to 7,
 > while freshness, volume, null-rate and schema checks all stayed green.**
 
-Measured, not estimated: computed in SQL against 19.3M real records, net of a
-counterfactual control model, using a difference-in-differences estimator that
-subtracts the control's unearned data advantage ($0.0731 per row, measured on
-3,840,878 unaffected rows). The naive control difference is $95,158; the stricter
-figure is the one quoted. Methodology, including the ways it could be wrong, in
+That is **$1.37 a trip**, measured in SQL against 19.3M real records and net of a
+counterfactual control. Full method, and the ways it could be wrong, in
 [Measuring the damage](#measuring-the-damage).
 
-Per trip, that is **$1.37**.
+## Then it wrote the fix, and rejected its own first attempt
+
+Culprit does not stop at the diagnosis. It patches the transformation, runs
+`dbt build` against the real warehouse, and only opens a PR if the fix actually
+holds up.
+
+Its first attempt was this:
+
+```sql
++ where vendor_id in (1, 2, 6)
+```
+
+That does not encode the new vendor. It **deletes all 87,693 of its rows**. It
+compiles. `dbt build` passes. The symptom disappears completely, along with the
+data. Anything checking whether the patch *looks* reasonable would have shipped it.
+
+The row-count gate caught it and refused to open the PR
+([evidence](examples/remediation_rejected.json)). The patch it did open adds a
+catch-all bucket, so it will not break again on the next new vendor:
+[PR #1](https://github.com/JonathanSolvesProblems/culprit/pull/1).
 
 ### See it without installing anything
 

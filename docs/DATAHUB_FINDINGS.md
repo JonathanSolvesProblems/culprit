@@ -131,11 +131,18 @@ and recommends the same workaround Culprit already implements: raise the inciden
 on the dataset the model trained on. Filing my own version a week later would be
 a near-duplicate, which is exactly the thing I declined to do with the skills PR.
 
-What I will add there instead is a **comment with an independent reproduction on a
-different surface**: #18685 hit it through the GraphQL mutation, Culprit hit it
-through the SDK aspect emit, which fails with `Invalid format for aspect:
-incident` rather than the `is not a valid destination` message. Same gap, second
-code path, useful to whoever fixes it.
+What I will add there is a **comment with the second error message**. #18685 quotes
+`is not a valid destination`. On DataHub Core v1.5.0.6 the same call surfaces as
+the aspect-validation error quoted at the top of this finding
+(`Invalid format for aspect: incident ... Entity type for urn ... is not
+supported`), which is harder to search for and does not name the allowed set.
+Worth adding to the issue so whoever fixes it covers both messages.
+
+I originally wrote here that Culprit hit this "through the SDK aspect emit,"
+implying a second code path. That was wrong and is corrected rather than quietly
+deleted: `culprit/writeback.py` only ever posts the GraphQL `raiseIncident`
+mutation. There is one code path, and the different wording is a version or
+surface difference, not a different API.
 
 **Item 5 is genuinely unclaimed, and is the one I am filing.**
 `acryldata/mcp-server-datahub` has 39 open issues and none covers it: calling

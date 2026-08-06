@@ -29,52 +29,54 @@ column going 6, 6, **7**.
 
 Say the counterfactual out loud. It is what makes the number defensible.
 
-## [0:22-0:32] Why nobody noticed
+## [0:22-0:28] Why nobody noticed
 
 **Screen:** the monitor sweep table.
 
-> "Freshness, volume, null rate and schema all stayed green. Some checks do
-> eventually notice, a quarter late, and when they fire they say *some speeds are
-> zero*. None of them name the model, the retrain that baked it in, or the cost."
+> "Freshness, volume, null rate and schema all stayed green. Four checks do
+> eventually fire. Two of them are false alarms from before the defect existed,
+> and the two real ones arrive a quarter late. None names the model, or the cost."
 
 Do not say "no monitor could catch this". It is not true and it is checkable.
 
-## [0:32-0:52] Culprit runs
+## [0:28-0:50] The agent runs, and the fact nothing else holds
 
-**Screen:** terminal, `culprit replay --animate`, trace rendering hop by hop.
-Then **cut to the DataHub lineage view** while the narration continues.
+**Screen:** terminal, `culprit replay --animate`, trace rendering hop by hop. Hold a
+burn-in caption in frame: `gpt-4o · 28 tool calls · 4 through DataHub's MCP server ·
+13 turns · 151.92s · $0.279`. Then cut to the dbt column-level lineage graph.
 
-> "Culprit walks DataHub's ML lineage backwards from the model. Through the
-> feature table, through the dbt transforms, to the raw column."
+> "Culprit is an agent. It gets a model URN and one vague sentence. No taxis, no
+> vendors, no column names anywhere in its prompt. It works out which column
+> defines the segments itself, reads that column off the model's features in
+> DataHub, then confirms it against real column-level lineage back to the raw table."
 
-**Screen:** the model page, framing `vendors_in_training_data = 1,2,6`.
+**Screen:** the DataHub `nyc_fare_predictor` page, framing `vendors_in_training_data = 1,2,6`.
+
+**This is the peak. Hold it.** It is the one beat no competing entry can copy.
 
 > "And here is the fact no other system holds. The graph recorded that this model
 > was trained on vendors one, two and six, while the warehouse was serving vendor
-> seven. Its encoder has no slot for a vendor that did not exist when it was
-> written."
+> seven. Its encoder has no slot for a vendor that did not exist when it was written."
 
-## [0:52-1:04] It writes back, then fixes it
+## [0:50-1:10] The answer lands in the graph
 
-**Screen:** the DataHub incident on the dataset, red FAIL badge visible. Then the
-generated diff.
+**Screen:** the incident on the source dataset (CUSTOM / "Semantic drift" / HIGH, with
+the evidence body visible), then the knowledge document, then the annotation on the
+`vendor_id` column page.
 
-> "It files the incident into DataHub with the evidence attached, so the next
-> engineer or the next agent inherits the answer. Then it writes the fix."
+> "It writes the answer back into DataHub. An incident on the dataset, with the
+> evidence and the dollars attached. A document. An annotation on the column itself.
+> The next engineer who opens vendor_id inherits the answer instead of rediscovering
+> it. So does the next agent."
 
-## [1:04-1:20] The moment that matters
+## [1:10-1:20] The PR, and the one it refused
 
-**Screen:** `examples/remediation_rejected.json`, gate table visible.
+**Screen:** the accepted diff and PR #1, then a fast cut to the rejected diff with the
+87,693 figure and a REJECTED stamp. Ten seconds, no lingering on the gate table.
 
-> "Its first attempt was to filter the new vendor out. That compiles. dbt builds
-> it. The symptom disappears, along with eighty-seven thousand rows. Culprit ran
-> the patch against the real warehouse, saw the row count drop, and refused to
-> open the pull request."
-
-**Screen:** the accepted diff, then PR #1.
-
-> "The patch it did open adds a catch-all bucket, so it will not break again on
-> the next new vendor."
+> "The patch it opened adds a catch-all bucket, so it will not break again on the next
+> new vendor. Its first attempt deleted eighty-seven thousand rows, and dbt built it
+> happily. Culprit ran that one against the real warehouse and refused to open it."
 
 ## [1:20-1:25] Close
 
@@ -124,7 +126,13 @@ Kept deliberately. Every entry is a claim the data contradicted.
 - **"six days"** became **six months**. Vendor entered 2024-12, scored 2025-06.
 - **"$18,400"** became **$90,322.36**, and the estimator changed to
   difference-in-differences, which nets out the control's data advantage.
-- **"No monitor on earth is watching that"** cut as an overclaim. Two metrics do
-  fire; neither is actionable at the time the damage starts.
+- **"No monitor on earth is watching that"** cut as an overclaim. Four metrics
+  fire across the two layers; two are false alarms predating the defect and the
+  two real ones are not actionable when the damage starts.
+- **The gate table stopped being the climax.** It was the emotional peak at
+  1:04-1:20 and labelled "the moment that matters", which is the same shape as
+  three previous losses whose demos built toward a proof console. It is now a
+  ten-second closing receipt behind the working PR, and the peak is the line the
+  graph alone can say: trained on vendors 1, 2 and 6 while serving vendor 7.
 - **"eleven seconds"** removed. No runtime claim ships before it is measured; the
   real figure is 151.92s and it is on screen as a caption.

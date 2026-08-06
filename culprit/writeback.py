@@ -56,7 +56,7 @@ def raise_incident(
 
     A third detail is a genuine platform limitation rather than a mistake:
     **DataHub rejects mlModel URNs as incident resources.** Passing one returns
-    `Entity type for urn ... is invalid`. So the incident is raised on the
+    `Entity type for urn ... is not supported`. So the incident is raised on the
     source dataset, which does support incidents and surfaces the red health
     badge in search, and the affected model is named in the incident body
     instead. See docs/DATAHUB_FINDINGS.md.

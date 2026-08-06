@@ -315,9 +315,9 @@ def check_standard_monitors(dataset: str, column: str) -> dict[str, Any]:
     detection covers five column metrics (null_count, unique_count, empty_count,
     zero_count, negative_count) on top of freshness, volume and schema. Testing
     only the ones that stay silent would be picking the scoreboard, and the
-    concession is a better argument than the overclaim anyway: two of these do
-    eventually fire, and neither tells you which model broke, which retrain
-    baked it in, or what it cost.
+    concession is a better argument than the overclaim anyway: four of these do
+    fire across the two layers, two of them months before the defect exists, and
+    none tells you which model broke, which retrain baked it in, or what it cost.
 
     Returns per-metric verdicts plus, for anything that fires, the first month
     it would plausibly have crossed a threshold.

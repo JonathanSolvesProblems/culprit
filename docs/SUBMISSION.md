@@ -16,8 +16,10 @@ Short variant if the field is character-capped:
 
 ## Inspiration
 
-Every monitoring tool I have used tells you **what** moved. None of them tell you
-**why**, because none of them have lineage.
+Model monitoring finds the cause inside the model. Data observability finds it
+inside the warehouse. Both do that well now. Neither holds the fact that decides
+this case, because it sits on the boundary between them: **which category values
+the deployed model was actually fitted on.**
 
 I went looking for a real example rather than inventing one, and found it in the
 public NYC Taxi and Limousine Commission feed. In December 2024 a new taxi vendor
@@ -202,8 +204,9 @@ I then checked the rest of my findings against what was already filed, rather th
 assuming. The mlModel incident rejection, which I had planned to file, is also
 already claimed: datahub#18685 documents it, lists the supported entity types, and
 recommends the same workaround Culprit implements. So I am not re-filing that
-either. I will add a comment there with an independent reproduction through the
-SDK aspect emit, which fails with a different error than the GraphQL path.
+either. I will add a comment there with the second error message: that PR quotes
+`is not a valid destination`, while DataHub Core v1.5.0.6 surfaces the same call
+as an aspect-validation error that does not name the allowed set.
 
 What I am filing is the one finding nothing else covers, across 39 open issues on
 `acryldata/mcp-server-datahub`: `update_description` with a `column_path` that

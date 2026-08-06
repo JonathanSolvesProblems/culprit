@@ -382,11 +382,13 @@ inherits the finding instead of rediscovering it.
 
 The incident is raised on the **source dataset**, not on the model, and that is
 not a design preference. DataHub rejects `mlModel` URNs as incident resources
-outright (`Entity type for urn ... is invalid`), so a degraded model cannot
+outright (`Entity type for urn ... is not supported`), so a degraded model cannot
 currently carry its own incident. The affected model is named in the incident
 body instead. This is finding #1 in
-[docs/DATAHUB_FINDINGS.md](docs/DATAHUB_FINDINGS.md) and is the platform gap I am
-filing upstream.
+[docs/DATAHUB_FINDINGS.md](docs/DATAHUB_FINDINGS.md). It is already documented
+upstream by datahub#18685, opened before I hit it, so I am commenting there rather
+than filing a duplicate. The finding I am filing is a different one, #5, which
+nothing else covers.
 
 ## Measuring the damage
 
@@ -577,13 +579,33 @@ to be explicit about every component:
 | The damage | **Real,** computed in SQL, net of a control. |
 | Write-back | **Real** `raiseIncident` and `save_document` against the live instance. |
 
-Nothing in this repository is simulated.
+Nothing in this repository is simulated. Two things are **recorded rather than
+derived**, and since they touch the central claim they belong here and not in
+Limitations:
+
+**The feature-to-root-column mapping is a property, not a walk.**
+`pipeline/emit_ml_lineage.py` writes `root_columns` onto each `mlFeature`, so
+`is_vendor_cmt -> vendor_id` is read back in one call rather than traversed hop by
+hop. That mapping is exactly what a production feature store (Feast, Tecton)
+publishes about its own features, and DataHub separately ingests the real
+column-level lineage for the same path, so the property is a cached answer rather
+than an invented one. But the honest verb is **reads the model's declared root
+column out of DataHub, then confirms it against ingested column lineage and 19.3M
+rows**, not "derives it by traversal."
+
+**The two `datahub_get_lineage` calls in the recorded run returned `total: 0`.**
+They were made against the `mlFeatureTable`, and ML entities do not participate in
+that lineage index the way datasets do. The dataset-level lineage the agent
+actually used came through `get_upstream_lineage` over GraphQL, and it is real and
+ingested (see [examples/07_dbt_ingested_lineage.json](examples/07_dbt_ingested_lineage.json),
+three hops). The MCP lineage tools returning nothing on ML entities is itself a
+finding, and it is why the walk crosses into GraphQL at the ML boundary.
 
 ## Limitations
 
-- The feature-to-column mapping is recorded by Culprit's own emitter as a custom
-  property. In a production feature store that mapping would come from the store
-  itself. The traversal logic does not change.
+- The feature-to-root-column mapping is a **recorded property, not a derived
+  traversal**. See [What is real](#what-is-real) for the full statement; it is
+  called out there rather than only here because it touches the central claim.
 - Culprit currently detects semantic change in low-cardinality columns. Unit
   changes and backfill-driven leakage are described in the agent's method but
   only the new-categorical-value path is exercised end to end here.

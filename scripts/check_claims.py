@@ -110,7 +110,8 @@ def main() -> int:
     # Anchor on the claim, not on a sentence.
     banned = [
         ("absolute monitor claim", r"[Nn]o monitor (on earth|can|could|would)"),
-        ("drift tools have no lineage", r"(have|has) no lineage"),
+        # Must catch both "they have no lineage" and "none of them have lineage".
+        ("drift tools have no lineage", r"(have|has)\s+(no|none)\s+lineage|none of them have lineage"),
         ("incident on the mlModel", r"[Ii]ncident\b[^.\n]{0,40}\bon the affected[^.\n]{0,20}mlModel"),
         ("skills contribution claimed as filed", r"I contributed a `?datahub-ml-lineage"),
         ("two metrics fire", r"[Tt]wo metrics do fire"),

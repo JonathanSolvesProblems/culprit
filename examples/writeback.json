@@ -1,6 +1,6 @@
 {
-  "incident_urn": "urn:li:incident:4a33eedd-d533-4e9b-a88c-c6a670d7c432",
-  "document": "{\"success\":true,\"urn\":\"urn:li:document:shared-f6801831-0192-44d8-9fb4-291e8662c01b\",\"message\":\"Successfully created document: Root cause: vendor_id semantic change\",\"author\":\"__datahub_system\"}",
+  "incident_urn": "urn:li:incident:0ce83080-4105-47cd-8795-fcc841f1020e",
+  "document": "{\"success\":true,\"urn\":\"urn:li:document:shared-2bbdde36-0b48-49d9-be07-08947655253d\",\"message\":\"Successfully created document: Root cause: vendor_id semantic change\",\"author\":\"__datahub_system\"}",
   "column_annotation": [
     "{\"success\":true,\"urn\":\"urn:li:dataset:(urn:li:dataPlatform:dbt,nyc_fares.warehouse.raw.yellow_trips,PROD)\",\"column_path\":\"vendor_id\",\"message\":\"Description updated successfully\"}"
   ]

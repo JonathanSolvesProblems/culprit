@@ -221,21 +221,28 @@ not.
 The draft stays in the repo at `contrib/datahub-skills/` as working evidence.
 
 I then checked the rest of my findings against what was already filed, rather than
-assuming. The mlModel incident rejection, which I had planned to file, is also
-already claimed: datahub#18685 documents it, lists the supported entity types, and
-recommends the same workaround Culprit implements. So I am not re-filing that
-either. I will add a comment there with the second error message: that PR quotes
-`is not a valid destination`, while DataHub Core v1.5.0.6 surfaces the same call
-as an aspect-validation error that does not name the allowed set.
+assuming. The mlModel incident rejection, which I had planned to file, was also
+already claimed: [datahub#18685](https://github.com/datahub-project/datahub/pull/18685)
+documents it, lists the supported entity types, and recommends the same workaround
+Culprit implements. So I did not re-file it. I
+[commented there](https://github.com/datahub-project/datahub/pull/18685#issuecomment-5223173987)
+with the second error message instead: that PR quotes `is not a valid destination`,
+while DataHub Core v1.5.0.6 surfaces the same call as an aspect-validation error
+that does not name the allowed set, so a reader who searches one string will not
+find the other.
 
-What I am filing is the one finding nothing else covers, across 39 open issues on
-`acryldata/mcp-server-datahub`: `update_description` with a `column_path` that
-matches no field returns `{"success": true}` and writes nothing. That one cost me
-an hour, because DataHub's dbt connector creates two sibling datasets and only one
-carries `schemaMetadata`.
+What I filed is the one finding nothing else covers, across 39 open issues on
+`acryldata/mcp-server-datahub`:
+[issue #200](https://github.com/acryldata/mcp-server-datahub/issues/200).
+`update_description` with a `column_path` that matches no field returns
+`{"success": true}` and writes nothing. That one cost me an hour, because DataHub's
+dbt connector creates two sibling datasets per model and only one carries
+`schemaMetadata` (14 fields versus 0 on my instance). An agent writing back to the
+catalog has no way to tell its write did nothing, so it reports success and moves
+on, which is a worse failure mode than an exception.
 
-Two near-duplicates avoided by checking first. The full list of eight verified
-findings is in `docs/DATAHUB_FINDINGS.md`.
+Two near-duplicates avoided by checking first, one real gap filed. The full list of
+eight verified findings is in `docs/DATAHUB_FINDINGS.md`.
 
 ## Built with
 

@@ -131,7 +131,7 @@ and recommends the same workaround Culprit already implements: raise the inciden
 on the dataset the model trained on. Filing my own version a week later would be
 a near-duplicate, which is exactly the thing I declined to do with the skills PR.
 
-What I will add there is a **comment with the second error message**. #18685 quotes
+I added a [**comment with the second error message**](https://github.com/datahub-project/datahub/pull/18685#issuecomment-5223173987) there. #18685 quotes
 `is not a valid destination`. On DataHub Core v1.5.0.6 the same call surfaces as
 the aspect-validation error quoted at the top of this finding
 (`Invalid format for aspect: incident ... Entity type for urn ... is not
@@ -144,7 +144,8 @@ deleted: `culprit/writeback.py` only ever posts the GraphQL `raiseIncident`
 mutation. There is one code path, and the different wording is a version or
 surface difference, not a different API.
 
-**Item 5 is genuinely unclaimed, and is the one I am filing.**
+**Item 5 was genuinely unclaimed, and is the one I filed:**
+[acryldata/mcp-server-datahub#200](https://github.com/acryldata/mcp-server-datahub/issues/200).
 `acryldata/mcp-server-datahub` has 39 open issues and none covers it: calling
 `update_description` with a `column_path` that matches no field on the entity
 returns `{"success": true}` and writes nothing observable. It cost an hour of real

@@ -59,6 +59,20 @@ python -m culprit.cli replay --animate
 The full environment (real DataHub, real warehouse, live write-back) is one
 command further down, in [Quickstart](#quickstart).
 
+### For judges: where each criterion is answered
+
+| Criterion | Answer | Evidence |
+|---|---|---|
+| **Use of DataHub** | Reads through DataHub's own MCP server, walks column-level lineage ingested by the native dbt connector, emits the ML entities no datapack ships, and writes **three artifacts back**: an incident, a knowledge document, and a column annotation. | [How this uses DataHub](#how-this-uses-datahub) · [`06_ml_lineage_in_datahub.json`](examples/06_ml_lineage_in_datahub.json) · [`07_dbt_ingested_lineage.json`](examples/07_dbt_ingested_lineage.json) · [`writeback.json`](examples/writeback.json) |
+| **Technical Execution** | Runs end to end on 19.3M real records. The generated fix is executed against the real warehouse before it is proposed, and the gate **rejected a patch that would have deleted 87,693 rows**. | [`remediation_rejected.json`](examples/remediation_rejected.json) · [PR #1](https://github.com/JonathanSolvesProblems/culprit/pull/1) · [`investigation.json`](examples/investigation.json) |
+| **Originality** | The deciding fact (which category values the deployed model was fitted on) sits on the boundary between model monitoring and data observability. Neither side holds it. Nothing DataHub ships walks it. | [The problem](#the-problem) · [The recorded run](#the-recorded-run) |
+| **Real-World Usefulness** | A real, unplanted defect in a public feed, priced in dollars against a counterfactual control, with an honest account of what monitoring did and did not catch. | [Measuring the damage](#measuring-the-damage) · [`02_monitor_sweep.json`](examples/02_monitor_sweep.json) |
+| **Submission Quality** | One story, sourced numbers, a reading order for every artifact, and a zero-setup path above. | [`examples/README.md`](examples/README.md) · `python scripts/check_claims.py` |
+| **Bonus: OSS contribution** | One issue filed, one comment on an existing PR, and one skill drafted then **withheld** because another contributor's PR already covered it. | [mcp-server-datahub#200](https://github.com/acryldata/mcp-server-datahub/issues/200) · [datahub#18685 comment](https://github.com/datahub-project/datahub/pull/18685#issuecomment-5223173987) · [DATAHUB_FINDINGS.md](docs/DATAHUB_FINDINGS.md) |
+
+Every figure in this README is checked against the committed artifacts by
+`python scripts/check_claims.py`, which also fails if a retired claim reappears.
+
 ## The problem
 
 Model monitoring does root-cause analysis inside the model boundary. Data
@@ -387,8 +401,9 @@ currently carry its own incident. The affected model is named in the incident
 body instead. This is finding #1 in
 [docs/DATAHUB_FINDINGS.md](docs/DATAHUB_FINDINGS.md). It is already documented
 upstream by datahub#18685, opened before I hit it, so I am commenting there rather
-than filing a duplicate. The finding I am filing is a different one, #5, which
-nothing else covers.
+than filing a duplicate ([comment](https://github.com/datahub-project/datahub/pull/18685#issuecomment-5223173987)).
+The finding I did file is a different one, #5, which nothing else covers:
+[mcp-server-datahub#200](https://github.com/acryldata/mcp-server-datahub/issues/200).
 
 ## Measuring the damage
 

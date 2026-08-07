@@ -161,13 +161,33 @@ the data contradicted.
 record, not a string. Metric and hyperparameter values are strings, not numbers.
 `MLModelGroupProperties` does not accept a `platform` argument. Each of these
 raises an Avro exception that names the whole record and not the offending field.
-Those findings became the contributed skill.
+Those findings became the drafted skill, and the two filings described below.
 
 ## Accomplishments I am proud of
 
+**The fix it refused to open.** Culprit's first generated patch was:
+
+```sql
++ where vendor_id in (1, 2, 6)
+```
+
+That does not encode the new vendor. It deletes every one of its rows, 87,693
+across the feature table. It compiles. `dbt build` passes. The symptom disappears
+completely, along with the data. Anything checking whether the patch merely *looks*
+reasonable would have shipped it.
+
+Because the gate runs the patch against the real warehouse and compares row counts
+rather than reading the diff, it caught the deletion and refused to open the pull
+request. The gate output is committed at `examples/remediation_rejected.json` and
+reproducible with `python scripts/capture_rejected_patch.py`. The patch it did
+open adds a catch-all bucket, so it will not break again on the next new vendor.
+
+That is the difference between an agent that writes plausible code and one that is
+allowed to touch a repository.
+
 Finding a real incident instead of planting one. The fault in this repository
-genuinely happened in a public dataset, and anyone can verify it in about a minute
-with `python scripts/scan_tlc_semantics.py`.
+genuinely happened in a public dataset, and anyone can verify it against the
+published feed with `python scripts/scan_tlc_semantics.py`.
 
 Reporting the inconvenient finding. Vendor 6 shows a $1.387 attributable gap and
 an implausible 61.95 mph average speed. I did not plant it and did not know about
@@ -219,5 +239,9 @@ findings is in `docs/DATAHUB_FINDINGS.md`.
 
 ## Built with
 
-python, datahub, duckdb, dbt, scikit-learn, anthropic-claude, model-context-protocol,
-docker, graphql, nyc-tlc-open-data
+python, datahub, duckdb, dbt, scikit-learn, openai, gpt-4o, model-context-protocol,
+anthropic, docker, graphql, pandas, sql, rich, nyc-open-data, mlops
+
+The recorded run is `gpt-4o`. `anthropic` is listed because the agent is
+provider-agnostic and the Anthropic path is implemented and supported, not because
+it produced the committed run.

@@ -1,8 +1,15 @@
 # Sample outputs
 
-Every file here was produced by a real run against the real stack. Nothing is
-hand-written, and nothing was edited after the fact. Regenerate the derived ones
-with `python scripts/generate_examples.py`.
+Every file here was produced by a real run against the real stack, and none was
+hand-edited. Regenerate the derived ones with `python scripts/generate_examples.py`.
+
+One file was re-generated rather than edited, and it is worth naming.
+`writeback.json` records a **re-filing** of the same finding: the original incident
+was written before a bug fix and quoted the difference-in-differences total beside
+the naive per-row figure, which do not multiply. `scripts/refile_writeback.py`
+replayed the write-back from the already-recorded run so the artifacts in DataHub
+carry consistent arithmetic. The agent was not re-run, so `investigation.json` is
+untouched, which is why its incident URN differs from the one in `writeback.json`.
 
 Read them in this order if you have five minutes and do not want to run anything.
 

@@ -441,7 +441,7 @@ rest. Culprit says so in the PR rather than implying the fix is complete.
 
 **Loss model, stated plainly.** This is a sum of *absolute* errors, priced under
 symmetric loss, because a mis-quote in either direction is a customer-experience
-and reconciliation cost. The signed net on vendor 7 is **-$13,876**, meaning the
+and reconciliation cost. The signed net on vendor 7 is **-$44,590**, meaning the
 model under-quotes those trips on average. Both numbers are true and they answer
 different questions; quoting only the second would understate a real problem, and
 quoting only the first without saying so would overstate it.
@@ -478,8 +478,12 @@ make demo                                    # macOS / Linux
 powershell -ExecutionPolicy Bypass -File scripts\demo.ps1    # Windows
 ```
 
-**In a hurry?** This needs no Docker, no DataHub and no API key, and it proves the
-incident is real in about a minute:
+**In a hurry?** Use `culprit replay --animate` above. It is the one-minute path.
+
+`make verify` proves the incident is real independently, by scanning the published
+TLC feed itself rather than trusting anything in this repo. It needs no Docker, no
+DataHub and no API key, but it downloads roughly 680 MB across twelve months of
+trip data first, so give it ten minutes and some disk:
 
 ```bash
 make verify
@@ -488,7 +492,7 @@ make verify
 The step-by-step version follows, if you would rather see each piece.
 
 ```bash
-git clone <this repo> && cd BuildwithDataHub
+git clone https://github.com/JonathanSolvesProblems/culprit && cd culprit
 
 python -m venv .venv
 .venv/Scripts/activate          # Windows
@@ -499,7 +503,7 @@ pip install -r requirements.txt
 datahub docker quickstart
 #    UI at http://localhost:9002   (datahub / datahub)
 
-# 2. Build the real warehouse. Downloads ~250 MB of real NYC TLC parquet.
+# 2. Build the real warehouse. Downloads ~330 MB of real NYC TLC parquet.
 python pipeline/load_raw.py
 
 # 3. Real dbt transforms, and the artifacts DataHub will ingest.

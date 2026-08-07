@@ -82,7 +82,8 @@ The judging criteria says strong submissions go beyond reading. Culprit writes:
   rather than the `mlModel` itself, because DataHub rejects `mlModel` URNs as
   incident resources (finding #1 in `DATAHUB_FINDINGS.md`)
 - a root-cause **Document** (`save_document`) linked to the model and the source column
-- **structured properties** recording the detected semantic change on the source column
+- an **annotation appended to the offending source column**, so the next person who
+  opens it inherits the finding (`update_description` via MCP)
 - the **ML lineage itself** (`mlModel`, `mlFeature`, `mlFeatureTable`,
   `dataProcessInstance`), emitted by Culprit's own ingestion, since no datapack has it
 

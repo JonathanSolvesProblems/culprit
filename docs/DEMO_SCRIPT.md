@@ -33,9 +33,11 @@ Say the counterfactual out loud. It is what makes the number defensible.
 
 **Screen:** the monitor sweep table.
 
-> "Freshness, volume, null rate and schema all stayed green. Four checks do
-> eventually fire. Two of them are false alarms from before the defect existed,
-> and the two real ones arrive a quarter late. None names the model, or the cost."
+> "Freshness, volume, null rate and schema all stayed green. Four checks do fire.
+> Two are false alarms from months before the defect existed. The two real ones
+> move the same month it starts, by two hundred and fifty-five rows in three and a
+> half million, and stay inside the noise until a quarter later. None of them names
+> the model, or the cost."
 
 Do not say "no monitor could catch this". It is not true and it is checkable.
 
@@ -94,7 +96,8 @@ the evidence body visible), then the knowledge document, then the annotation on 
 | "a dollar thirty-seven a trip" | $1.3655, difference-in-differences | `examples/04_measured_impact.json` |
 | "sixty-six thousand trips" | 66,146 | scored month 2025-06 |
 | "ninety thousand dollars" | $90,322.36 | `examples/04_measured_impact.json` |
-| "a quarter late" | zero_count unmissable 2025-03, defect entered 2024-12 | `examples/02_monitor_sweep.json` |
+| "255 rows in three and a half million" | 255 of 3,502,209 = 0.0073% in 2024-12 | `examples/02_monitor_sweep.json` |
+| "inside the noise until a quarter later" | first exceedance 2024-12 at noise level; unmissable 2025-03 | `examples/02_monitor_sweep.json` |
 | "trained on vendors one, two and six" | `vendors_in_training_data = 1,2,6` | `examples/06_ml_lineage_in_datahub.json` |
 | "eighty-seven thousand rows" | 87,693 | `examples/remediation_rejected.json` |
 | caption: 28 calls, $0.279, 151.92s | recorded run | `examples/investigation.json` |

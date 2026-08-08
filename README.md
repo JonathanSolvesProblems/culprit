@@ -59,6 +59,28 @@ python -m culprit.cli replay --animate
 The full environment (real DataHub, real warehouse, live write-back) is one
 command further down, in [Quickstart](#quickstart).
 
+### What it looks like
+
+The fact the whole diagnosis turns on, recorded in the graph before anything went
+wrong: **the model was trained on vendors 1, 2 and 6.**
+
+![The model page in DataHub, showing vendors_in_training_data = 1,2,6](docs/img/datahub_model_properties.png)
+
+The incident Culprit filed, on the source dataset, typed `CUSTOM` / "Semantic
+drift" / `HIGH`:
+
+![The incident Culprit raised in DataHub](docs/img/datahub_incident.png)
+
+Column-level lineage, ingested by DataHub's native dbt connector rather than
+asserted by this project:
+
+![Column-level lineage on fct_trip_features](docs/img/datahub_lineage.png)
+
+The 13 model inputs Culprit emitted as `mlFeature` entities, which no DataHub
+sample datapack ships:
+
+![The model's features in DataHub](docs/img/datahub_model_features.png)
+
 ### For judges: where each criterion is answered
 
 | Criterion | Answer | Evidence |

@@ -81,7 +81,13 @@ The whole point was that nothing could be simulated, so the stack is real end to
 end:
 
 - **19.3M real NYC TLC trip records** across five months, loaded at true published
-  volumes into DuckDB. No sampling anywhere.
+  volumes into DuckDB. No sampling anywhere. Source:
+  [TLC Trip Record Data](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page).
+  `VendorID = 7` is Helix, a real TLC-authorised provider, per the official
+  [data dictionary](https://www.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_yellow.pdf),
+  whose published version is dated March 18 2025, three months after vendor 7
+  first appears in the feed. `python scripts/scan_tlc_semantics.py` reproduces the
+  month-by-month counts straight from the TLC endpoint in about a minute.
 - **Real dbt transforms** (dbt-duckdb) containing the actual defect.
 - **DataHub's native dbt connector** parses the real `manifest.json` and
   `catalog.json` to produce genuine column-level `fineGrainedLineage`. The dataset

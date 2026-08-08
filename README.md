@@ -136,6 +136,32 @@ A new taxi vendor entered the NYC Taxi and Limousine Commission feed:
 It arrives at a volume so small that no threshold could catch it, then compounds
 by nearly 300x over six months.
 
+### Primary sources, so none of this has to be taken on trust
+
+Everything above comes from files the TLC publishes, not from anything I
+generated:
+
+| What | Source |
+|---|---|
+| The trip records themselves | [TLC Trip Record Data](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page), downloaded from `https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_YYYY-MM.parquet` by [`pipeline/load_raw.py`](pipeline/load_raw.py) |
+| What `VendorID` means, and that `7` is a real code | [Data Dictionary, Yellow Taxi Trip Records](https://www.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_yellow.pdf) (PDF). It lists `1= Creative Mobile Technologies`, `2= Curb Mobility`, `6= Myle Technologies`, `7= Helix` |
+| Who is authorised to send records | [TLC authorised technology providers](https://www.nyc.gov/site/tlc/businesses/yellow_cab_hackup.page) |
+
+Two details worth noticing in the dictionary. `VendorID` is documented only as a
+list of integer codes, with no note that the set can grow, which is exactly why a
+hardcoded `CASE` over the codes that existed at the time looked safe when it was
+written. And the published version of that dictionary is dated **March 18, 2025**,
+three months *after* vendor 7 first appears in the data. The feed changed first
+and the documentation caught up later, which is the normal order of events and
+the reason a catalog that records what a model was trained on is worth having.
+
+The month-by-month counts above are reproducible in about a minute against the
+live TLC endpoint, without this repository's warehouse or DataHub:
+
+```bash
+python scripts/scan_tlc_semantics.py
+```
+
 The `fct_trip_features` dbt model one-hot encodes vendors with a hardcoded `CASE`
 over the three vendors that existed when it was written. That is ordinary,
 defensible dbt code. It is also the culprit:

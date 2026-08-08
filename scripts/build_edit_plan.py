@@ -41,26 +41,31 @@ FIXES = {
 # Timings come from the actual transcript segments, so each frame lands under
 # the sentence that describes it.
 SEGMENTS = [
-    ("tlc_data_dictionary",     0.0,  10.7, "NYC TLC data dictionary", "slow_push"),
-    ("results_vendors",        10.7,  18.5, "Measured per vendor",     "slow_push"),
-    ("results_vendors",        18.5,  24.9, "Against a control model", "none"),
-    ("results_monitors",       24.9,  34.3, "Every check green",       "slow_push"),
-    ("results_monitors",       34.3,  57.9, "The four that do fire",   "none"),
-    ("results_semantic_change", 57.9, 61.1, "None names the model",    "slow_push"),
-    ("terminal_run",           61.1,  71.2, "One model, one sentence", "slow_push"),
-    ("datahub_model_features", 71.2,  80.8, "13 features in DataHub",  "slow_push"),
-    ("datahub_lineage",        80.8,  87.4, "Column-level lineage",    "slow_push"),
-    # The peak. Held for nine seconds on one frame, deliberately.
-    ("datahub_model_properties", 87.4, 96.4, "Trained on vendors 1, 2, 6", "slow_push"),
-    ("datahub_schema",         96.4, 104.9, "The unmapped column",     "slow_push"),
-    ("readme_judges",         104.9, 116.8, "Neither side holds it",   "slow_push"),
-    ("datahub_incident",      116.8, 127.5, "Incident filed back",     "slow_push"),
-    ("datahub_schema",        127.5, 134.8, "A note on the column",    "none"),
-    ("pr_diff",               134.8, 137.8, "The fix it wrote",        "slow_push"),
-    ("rejected_patch",        137.8, 153.2, "87,693 rows destroyed",   "slow_push"),
-    ("pr_diff",               153.2, 160.8, "The patch it opened",     "none"),
-    ("repo_home",             160.8, 169.9, "",                        "slow_push"),
+    # nyc.gov blocks headless browsers (Akamai, HTTP 403), so the TLC data
+    # dictionary cannot be captured here. The opener uses our own detection of
+    # the same change instead. Swap in a manual screenshot of the dictionary if
+    # one is taken; the slot is the first two entries.
+    ("results_semantic_change",  0.0,  10.7, "The change, in the real feed", "none"),
+    ("semantic_change_json",    10.7,  15.1, "Detected, not planted",       "none"),
+    ("results_vendors",         15.1,  24.9, "Measured against a control",  "none"),
+    ("results_monitors",        24.9,  42.1, "Every standard check green",  "none"),
+    ("results_four_fire",       42.1,  57.9, "The four that do fire",       "none"),
+    ("results_impact",          57.9,  61.1, "None names the model",        "none"),
+    ("terminal_run",            61.1,  71.2, "One model, one sentence",     "none"),
+    ("datahub_model_features",  71.2,  80.8, "13 features in DataHub",      "slow_push"),
+    ("datahub_lineage",         80.8,  87.4, "Column-level lineage",        "slow_push"),
+    # The peak. One frame, held, deliberately still.
+    ("datahub_model_properties", 87.4, 96.4, "Trained on vendors 1, 2, 6",  "none"),
+    ("datahub_schema",          96.4, 104.9, "The unmapped column",         "slow_push"),
+    ("readme_judges",          104.9, 116.8, "Neither side holds it",       "none"),
+    ("datahub_incident",       116.8, 127.5, "Incident filed back",         "slow_push"),
+    ("datahub_schema",         127.5, 134.8, "A note on the column",        "none"),
+    ("pr_diff",                134.8, 137.8, "The fix it wrote",            "none"),
+    ("rejected_patch",         137.8, 153.2, "87,693 rows destroyed",       "none"),
+    ("pr_diff",                153.2, 160.8, "The patch it opened",         "none"),
+    ("repo_home",              160.8, 169.9, "",                            "slow_push"),
 ]
+
 
 
 def fix(word: str) -> str:
